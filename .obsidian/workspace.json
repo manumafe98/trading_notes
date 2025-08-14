@@ -1,0 +1,211 @@
+{
+  "main": {
+    "id": "b7ab12442bdddd43",
+    "type": "split",
+    "children": [
+      {
+        "id": "a4f8d8b048f7650c",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "4d438da6a4e1c8b7",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "601b8d75fe9adfed",
+    "type": "split",
+    "children": [
+      {
+        "id": "161dc4563725bd9b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "306b1e11d62d0c31",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "67b50d9b4b5f1ef9",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "require",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "ad73fa5f82eaf942",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "c5defa213acb7838",
+    "type": "split",
+    "children": [
+      {
+        "id": "bb8f8a3d0cc2da70",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "04fdea46fea7cc71",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Programming/Blockchain Dev/Decentralized Oracle Networks.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for Decentralized Oracle Networks"
+            }
+          },
+          {
+            "id": "eb5052fdf0676802",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Programming/Blockchain Dev/Decentralized Oracle Networks.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from Decentralized Oracle Networks"
+            }
+          },
+          {
+            "id": "ef08c2a5a1010c2a",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "29b760eaf8935dbf",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Programming/Blockchain Dev/Decentralized Oracle Networks.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Decentralized Oracle Networks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false
+    }
+  },
+  "active": "4d438da6a4e1c8b7",
+  "lastOpenFiles": [
+    "Órdenes de gestión de riesgo y beneficio/Take Profit.md",
+    "Órdenes de gestión de riesgo y beneficio/Stop Loss.md",
+    "Órdenes de gestión de riesgo y beneficio/Break Even.md",
+    "Unidades de medida/Puntos.md",
+    "Unidades de medida/Ticks.md",
+    "Unidades de medida/Pips.md",
+    "Estilos de Trading/Day Trading.md",
+    "Estilos de Trading/Scalping.md",
+    "Estilos de Trading/Swing Trading.md",
+    "Instrumentos Operables/Futuros.md",
+    "Instrumentos Operables/CFDs.md",
+    "Unidades de medida.md",
+    "Unidades de medida",
+    "Instrumentos Operables/ETFs.md",
+    "Órdenes de gestión de riesgo y beneficio",
+    "Sesiones de Mercado/Sesión Australiana.md",
+    "Estilos de Trading",
+    "Instrumentos Operables",
+    "Sesiones de Mercado/Sesión Norteamericana.md",
+    "Sesiones de Mercado/Sesión Europea.md",
+    "Sesiones de Mercado/Sesión Asiática.md",
+    "Activos Operables/Acciones.md",
+    "Sesiones de Mercado",
+    "Activos Operables/Ciptomonedas.md",
+    "Activos Operables/Materias Primas.md",
+    "Activos Operables/Forex (Divisas).md",
+    "Activos Operables/Índices.md",
+    "Trading.md",
+    "Activos Operables",
+    "Análisis técnico vs fundamental.md",
+    "Inversión vs Trading.md",
+    "Análisis Tecnico.md",
+    "blockchain_dev.rar",
+    "Blockchain Dev.rar",
+    "Blockchain Dev/Images/account_abstraction_transaction_flow.png",
+    "Blockchain Dev/Images/traditional_ethereum_transaction_flow.png",
+    "Local/Ideas",
+    "Blockchain Dev/Solidity/Chainlink/Chainlink Data Feeds",
+    "Blockchain Dev/Images/transaction_example_etherscan.png",
+    "Blockchain Dev/Images/blockchain_trilemma.png",
+    "Blockchain Dev/Images/transaction_example_more_details.png"
+  ]
+}

@@ -1,0 +1,1 @@
+CFDs o Contratos por diferencia, permiten operar activos subyacentes sin poseerlos físicamente, replicando el comportamiento del activo principal con ventajas como el apalancamiento, pero con altas comisiones y spreads.
