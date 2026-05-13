@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trading Plan v2.0</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+    :root {
+      --bg: #0d0d0d;
+      --bg2: #111111;
+      --bg3: #161616;
+      --card: #1a1a1a;
+      --card2: #1e1e1e;
+      --border: #2a2a2a;
+      --border2: #333333;
+      --text: #d4d4d4;
+      --text-dim: #888888;
+      --text-faint: #555555;
+      --accent-blue: #3b7dd8;
+      --accent-blue-dim: #2a5a9e;
+      --accent-red: #c0392b;
+      --accent-red-dim: #922b21;
+      --accent-green: #27ae60;
+      --accent-green-dim: #1e8449;
+      --accent-yellow: #d4ac0d;
+      --accent-orange: #e67e22;
+      --accent-cyan: #17a589;
+      --white: #f0f0f0;
+      --page-width: 210mm;
+      --page-height: 297mm;
+      --margin: 14mm;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0a0a0a;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text);
+      font-size: 8.5pt;
+      line-height: 1.5;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page {
+      width: var(--page-width);
+      height: var(--page-height);
+      background: var(--bg);
+      margin: 0 auto 8mm;
+      padding: var(--margin);
+      position: relative;
+      overflow: hidden;
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── HEADER / FOOTER ─── */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border2);
+      padding-bottom: 4px;
+      margin-bottom: 10px;
+      flex-shrink: 0;
+    }
+
+    .page-header .doc-label {
+      font-size: 6.5pt;
+      color: var(--text-faint);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .page-header .section-label {
+      font-size: 6.5pt;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .page-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border);
+      padding-top: 4px;
+      margin-top: auto;
+      flex-shrink: 0;
+    }
+
+    .page-footer span {
+      font-size: 6pt;
+      color: var(--text-faint);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ─── SECTION TITLE ─── */
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 8px;
+      margin-top: 10px;
+    }
+
+    .section-title:first-child {
+      margin-top: 0;
+    }
+
+    .section-title .icon {
+      font-size: 9pt;
+      color: var(--text-dim);
+    }
+
+    .section-title h2 {
+      font-size: 9pt;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--white);
+    }
+
+    .section-title .line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ─── CARDS ─── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+    }
+
+    .card-label {
+      font-size: 6pt;
+      color: var(--text-faint);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    /* ─── TABLE ─── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8pt;
+    }
+
+    th {
+      background: var(--bg3);
+      color: var(--text-faint);
+      font-size: 6.5pt;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 6px 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--border2);
+    }
+
+    td {
+      padding: 7px 8px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+      color: var(--text);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* ─── BADGES ─── */
+    .badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-size: 7pt;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .badge-blue {
+      background: #1a3557;
+      color: #6baed6;
+    }
+
+    .badge-red {
+      background: #4a1010;
+      color: #e07070;
+    }
+
+    .badge-green {
+      background: #0e2e1a;
+      color: #52b870;
+    }
+
+    .badge-active {
+      color: #52c41a;
+      font-size: 7pt;
+    }
+
+    .badge-incorporating {
+      color: var(--accent-yellow);
+      font-size: 7pt;
+    }
+
+    /* ─── LIST ITEMS ─── */
+    .list-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 8pt;
+      line-height: 1.45;
+    }
+
+    .list-item:last-child {
+      border-bottom: none;
+    }
+
+    .list-item .bullet {
+      color: var(--text-faint);
+      flex-shrink: 0;
+      margin-top: 1px;
+      font-size: 8pt;
+    }
+
+    .list-item .bullet-x {
+      color: #c0392b;
+    }
+
+    .list-item .bullet-arrow {
+      color: var(--accent-blue);
+    }
+
+    .list-item .bullet-check {
+      color: var(--accent-green);
+    }
+
+    .list-item .bullet-warn {
+      color: var(--accent-yellow);
+    }
+
+    .list-item .bullet-star {
+      color: var(--accent-yellow);
+    }
+
+    strong {
+      color: var(--white);
+      font-weight: 600;
+    }
+
+    em {
+      color: var(--accent-yellow);
+      font-style: normal;
+      font-weight: 500;
+    }
+
+    /* ─── ALERT BOX ─── */
+    .alert {
+      border-left: 3px solid var(--accent-yellow);
+      background: #1c1a0f;
+      padding: 7px 10px;
+      margin: 6px 0;
+      border-radius: 0 3px 3px 0;
+      font-size: 7.5pt;
+      color: #c8b860;
+      line-height: 1.5;
+    }
+
+    .alert-info {
+      border-left-color: var(--accent-blue);
+      background: #0e1a2b;
+      color: #7ba8d4;
+    }
+
+    /* ─── STAT BLOCK (cover page) ─── */
+    .stat-block {
+      background: var(--card);
+      border: 1px solid var(--border2);
+      border-radius: 5px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 6.5pt;
+      color: var(--text-faint);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .stat-value {
+      font-size: 20pt;
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1;
+      font-family: 'Space Mono', monospace;
+    }
+
+    .stat-value.positive {
+      color: #52c41a;
+    }
+
+    .stat-value.neutral {
+      color: var(--accent-blue);
+    }
+
+    /* ─── PROFILE BLOCK (cover) ─── */
+    .profile-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 8pt;
+    }
+
+    .profile-row:last-child {
+      border-bottom: none;
+    }
+
+    .profile-key {
+      color: var(--text-dim);
+    }
+
+    .profile-val {
+      color: var(--white);
+      font-weight: 500;
+    }
+
+    /* ─── RULE PILL ─── */
+    .rule-pill {
+      display: inline-flex;
+      align-items: center;
+      background: var(--card2);
+      border: 1px solid var(--border2);
+      border-radius: 3px;
+      padding: 3px 8px;
+      font-size: 7.5pt;
+      gap: 5px;
+      margin: 2px 3px 2px 0;
+    }
+
+    .rule-pill .pill-label {
+      color: var(--text-faint);
+      font-size: 6.5pt;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .rule-pill .pill-value {
+      color: var(--white);
+      font-weight: 600;
+    }
+
+    /* ─── TWO COLUMN ─── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .three-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .four-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    /* ─── COVER PAGE ─── */
+    .cover-logo {
+      font-size: 7pt;
+      color: var(--text-faint);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+
+    .cover-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 28pt;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.01em;
+      line-height: 1.1;
+      margin-bottom: 4px;
+    }
+
+    .cover-subtitle {
+      font-size: 8pt;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border2);
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 8px 0;
+    }
+
+    /* mini sub-label inside card */
+    .sub-section {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .sub-section-title {
+      font-size: 6.5pt;
+      color: var(--text-faint);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    /* ─── SESSIONS CARD ─── */
+    .session-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px 10px;
+      margin-bottom: 5px;
+    }
+
+    .session-type {
+      font-size: 6pt;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      margin-bottom: 3px;
+    }
+
+    .session-name {
+      font-size: 9.5pt;
+      font-weight: 700;
+      color: var(--white);
+    }
+
+    .session-detail {
+      font-size: 7.5pt;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    /* checklist */
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 8pt;
+      line-height: 1.45;
+    }
+
+    .check-item:last-child {
+      border-bottom: none;
+    }
+
+    .check-box {
+      width: 12px;
+      height: 12px;
+      border: 1.5px solid var(--border2);
+      border-radius: 2px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* question items */
+    .q-item {
+      display: flex;
+      gap: 8px;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 7.5pt;
+      line-height: 1.5;
+    }
+
+    .q-item:last-child {
+      border-bottom: none;
+    }
+
+    .q-num {
+      color: var(--text-faint);
+      font-size: 7pt;
+      flex-shrink: 0;
+      min-width: 18px;
+      margin-top: 1px;
+    }
+
+    /* objectives */
+    .obj-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 8pt;
+    }
+
+    .obj-item:last-child {
+      border-bottom: none;
+    }
+
+    .obj-dot {
+      color: var(--accent-blue);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    /* ─── PRINT ─── */
+    @media print {
+      body {
+        background: #0a0a0a;
+        margin: 0;
+        padding: 0;
+      }
+
+      .page {
+        margin: 0;
+        width: 210mm;
+        height: 297mm;
+      }
+    }
+
+    @page {
+      size: A4;
+      margin: 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- PAGE 1 — COVER -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      <span class="section-label">Trading Plan v2.0 · Febrero 2026</span>
+    </div>
+
+    <div style="margin-bottom: 16px; text-align: center;">
+      <div class="cover-logo">Trading</div>
+      <div class="cover-title">TRADING<br>PLAN</div>
+      <div class="cover-subtitle">VERSION 2.0 · ÚLTIMA REVISIÓN: FEBRERO 2026</div>
+    </div>
+
+    <!-- Stats Row — larger -->
+    <div class="four-col" style="margin-bottom: 16px;">
+      <div class="stat-block">
+        <div class="stat-label">P&amp;L Total</div>
+        <div class="stat-value positive" style="font-size:22pt;">+$26.79</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-label">Ratio de Acierto</div>
+        <div class="stat-value neutral" style="font-size:22pt;">50%</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-label">Promedio R:R</div>
+        <div class="stat-value" style="font-size:22pt;">1.6</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-label">Mejor Estrategia</div>
+        <div class="stat-value" style="font-size:22pt; color:#6baed6;">BLUE</div>
+      </div>
+    </div>
+
+    <!-- Layout de una sola columna para Perfil, Metas y Gestión -->
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+
+      <!-- Fila: Perfil + Metas (usando grid para optimizar espacio pero manteniendo flujo vertical) -->
+      <div class="two-col" style="gap: 12px;">
+        <!-- Left: Profile -->
+        <div style="display: flex; flex-direction: column;">
+          <div class="section-title" style="margin-top:0;">
+            <span class="icon">◈</span>
+            <h2>Perfil del Trader</h2>
+            <div class="line"></div>
+          </div>
+          <div class="card" style="padding: 10px 14px; flex: 1;">
+            <div class="profile-row"><span class="profile-key">Estilo</span><span class="profile-val">Conservador ·
+                Moderado</span>
+            </div>
+            <div class="profile-row"><span class="profile-key">Tipo Actual</span><span class="profile-val">Day
+                Trader</span></div>
+            <div class="profile-row"><span class="profile-key">Objetivo</span><span class="profile-val">Day +
+                Scalping</span></div>
+            <div class="profile-row"><span class="profile-key">Mercado</span><span class="profile-val">Forex — Cripto
+                incorporando</span></div>
+            <div class="profile-row"><span class="profile-key">Precision</span><span class="profile-val">100%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Metas Combinadas -->
+        <div style="display: flex; flex-direction: column;">
+          <div class="section-title" style="margin-top:0;">
+            <span class="icon">◎</span>
+            <h2>Metas Principales</h2>
+            <div class="line"></div>
+          </div>
+          <div class="card" style="padding: 10px 12px; flex: 1;">
+            <div class="list-item">
+              <span class="bullet bullet-arrow">→</span>
+              <span><strong>Fondeo:</strong> Bullfy 10k Forex + Especialización Cripto</span>
+            </div>
+            <div class="list-item">
+              <span class="bullet bullet-arrow">→</span>
+              <span><strong>Consistencia:</strong> Rentabilidad y libertad horaria</span>
+            </div>
+            <div class="list-item">
+              <span class="bullet bullet-arrow">→</span>
+              <span><strong>Futuro:</strong> Viajar y automatizar herramientas</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gestión Monetaria (Full Width) -->
+      <div style="display:flex; flex-direction:column;">
+        <div class="section-title" style="margin-top:0;">
+          <span class="icon">$</span>
+          <h2>Gestión Monetaria</h2>
+          <div class="line"></div>
+        </div>
+
+        <!-- Bloque de Capital Actual y Objetivo -->
+        <div class="two-col" style="margin-bottom: 6px; gap: 8px;">
+          <div class="card" style="margin-bottom: 0;">
+            <div class="card-label">Estado Actual Ahorro</div>
+            <div style="font-size: 8.5pt; color: var(--white);">
+              <strong>100%</strong> de mi capital en criptomonedas
+            </div>
+          </div>
+          <div class="card" style="margin-bottom: 0;">
+            <div class="card-label">Objetivo Financiero</div>
+            <div style="font-size: 7.5pt; color: var(--text-dim); line-height: 1.3;">
+              Crear fondo para cuentas y challenges (ahorro + ganancias):<br>
+              <strong style="color: var(--accent-blue);">55% Cuentas</strong> / <strong
+                style="color: var(--accent-green);">45% Inv. Cripto</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <table>
+            <thead>
+              <tr>
+                <th>Modalidad</th>
+                <th>Riesgo/Trade</th>
+                <th>Simultáneos (Límites)</th>
+                <th>Observación</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge badge-blue">Day Trading</span></td>
+                <td><strong>1%</strong></td>
+                <td>Máx. 2 globales</td>
+                <td style="font-size:7.5pt; color:var(--text-dim);">Total entre modalidades no puede superar 2</td>
+              </tr>
+              <tr>
+                <td><span class="badge" style="background:#2d1b0e; color:#e0955a;">Swing Trading</span></td>
+                <td><strong>1.5%</strong></td>
+                <td>Máx. 2 globales</td>
+                <td style="font-size:7.5pt; color:var(--text-dim);">Si hay swing sin cierre cercano se permite +1 Day o
+                  Scalping</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-red">Scalping</span></td>
+                <td><strong>0.5%</strong></td>
+                <td>Máx. 2 globales</td>
+                <td style="font-size:7.5pt; color:var(--text-dim);">Ej: 1 Day + 1 Scalping o 2 Scalping (Máximo 2)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="alert" style="margin-bottom: 0;">
+          ⚠ <strong>Regla Global:</strong> El máximo global de trades simultáneos es <strong>2</strong>,
+          independientemente de la modalidad. Ejemplos válidos: 2 scalping · 1 day + 1 scalping · 1 swing + 1 day. Nunca
+          superar 2 en total.
+        </div>
+      </div>
+    </div>
+
+    <!-- Strategies overview — FULL WIDTH -->
+    <div style="margin-top: 10px;">
+      <div class="section-title">
+        <span class="icon">▲</span>
+        <h2>Estrategias</h2>
+        <div class="line"></div>
+      </div>
+      <div class="card" style="padding: 0; overflow: hidden;">
+        <table>
+          <thead>
+            <tr>
+              <th>Estrategia</th>
+              <th>Modalidad</th>
+              <th>Estado</th>
+              <th>TP Target</th>
+              <th>Notas</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-blue">BLUE</span></td>
+              <td>Day Trading</td>
+              <td><span class="badge-active">✓ ACTIVA</span></td>
+              <td>Máx/mín anterior (cuerpo)</td>
+              <td style="font-size:7.5pt; color:var(--text-dim);">Mejor estrategia actual</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-red">RED</span></td>
+              <td>Day Trading</td>
+              <td><span class="badge-active">✓ ACTIVA</span></td>
+              <td>Máx/mín anterior (cuerpo)</td>
+              <td style="font-size:7.5pt; color:var(--text-dim);">—</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-red">RED</span></td>
+              <td>Scalping</td>
+              <td><span class="badge-incorporating">↻ INCORPORANDO</span></td>
+              <td style="color:var(--text-faint);">—</td>
+              <td style="font-size:7.5pt; color:var(--text-dim);">Requiere backtesting</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-green">GREEN</span></td>
+              <td>Cripto / Forex</td>
+              <td><span class="badge-incorporating">↻ INCORPORANDO</span></td>
+              <td style="color:var(--text-faint);">—</td>
+              <td style="font-size:7.5pt; color:var(--text-dim);">Requiere backtesting</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="alert alert-info" style="margin-top: 6px;">
+        Requisito incorporación: Al estar incorporando una estrategia, no incorporar nuevas hasta tenerla operativa. Sin
+        incorporación activa: mínimo <em>25 trades</em> en backtesting con reglas claras.
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span>Trading Plan v2.0</span>
+      <span>Perfil · Gestión · Estrategias</span>
+      <span>1 / 5</span>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- PAGE 2 — GESTIÓN TRADE + SESIONES + ENTRADAS + REGLAS GENERALES -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      <span class="doc-label">■ Trading Plan v2.0</span>
+      <span class="section-label">01 — Gestión · Sesiones · Entradas · Reglas</span>
+    </div>
+
+    <div class="two-col" style="align-items: stretch;">
+
+      <!-- LEFT COLUMN -->
+      <div style="display: flex; flex-direction: column;">
+        <!-- Gestión del Trade -->
+        <div class="section-title" style="margin-top:0;">
+          <span class="icon">⚙</span>
+          <h2>Gestión del Trade</h2>
+          <div class="line"></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Estado &amp; Evolución</div>
+          <div class="list-item">
+            <span class="bullet bullet-arrow">→</span>
+            <span><strong>Estado actual:</strong> Sin gestión de posición activa.</span>
+          </div>
+          <div class="list-item">
+            <span class="bullet bullet-arrow">→</span>
+            <span><strong>Requisito para cambio:</strong> Tras 1–2 revisiones de trades, si se detecta un patrón en
+              contra por no gestionar, analizar qué cambios serían beneficiosos e implementarlos de forma
+              controlada.</span>
+          </div>
+        </div>
+
+        <!-- Sesiones -->
+        <div class="section-title">
+          <span class="icon">◷</span>
+          <h2>Sesiones</h2>
+          <div class="line"></div>
+        </div>
+        <div class="session-card">
+          <div class="session-type">Day Trading</div>
+          <div class="session-name">Toda sesión EEUU</div>
+          <div class="session-detail">+ Cierre de Londres</div>
+        </div>
+        <div class="session-card">
+          <div class="session-type">Scalping</div>
+          <div class="session-name">Primeras 2hs EEUU</div>
+          <div class="session-detail">Objetivo: operar esas 2hs y dejar</div>
+        </div>
+
+        <!-- Entradas -->
+        <div class="section-title">
+          <span class="icon">⚡</span>
+          <h2>Entradas</h2>
+          <div class="line"></div>
+        </div>
+        <div class="card" style="flex: 1;">
+          <div class="card-label">Estado &amp; Roadmap</div>
+          <div class="list-item">
+            <span class="bullet bullet-arrow">→</span>
+            <span><strong>Estado actual:</strong> Solo entradas a mercado.</span>
+          </div>
+          <div class="list-item">
+            <span class="bullet bullet-arrow">→</span>
+            <span><strong>Incorporación de Limit:</strong> Elegir 1 estrategia, realizar al menos <em>25 trades</em> en
+              backtesting con esa entrada, y tener reglas claras definidas antes de proceder en live.</span>
+          </div>
+          <div class="list-item">
+            <span class="bullet bullet-arrow">→</span>
+            <span><strong>Monitoreo:</strong> Tras 1–2 revisiones de trades, si se detecta patrón beneficioso de Limit,
+              backtestearlo antes de implementar.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div style="display: flex; flex-direction: column;">
+        <!-- Reglas Generales -->
+        <div class="section-title" style="margin-top:0;">
+          <span class="icon">▪</span>
+          <h2>Reglas Generales</h2>
+          <div class="line"></div>
+        </div>
+        <div class="card">
+          <div class="list-item">
+            <span class="bullet bullet-x">✗</span>
+            <span>No ejecutar trades antes de noticias de alto impacto.</span>
+          </div>
+          <div class="list-item">
+            <span class="bullet bullet-x">✗</span>
+            <span>Cerca del cierre de viernes: no operar salvo certeza de que el trade cerrará antes del fin de
+              mercado.</span>
+          </div>
+          <div class="list-item">
+            <span class="bullet bullet-x">✗</span>
+            <span>No operar si estás enfermo, desmotivado o con inconvenientes personales.</span>
+          </div>
+          <div class="list-item">
+            <span class="bullet bullet-arrow">→</span>
+            <span>Si hay trades activos (Day o Scalping): no ejecutar más hasta que cierren. El máximo global es siempre
+              <strong>2 trades simultáneos</strong>. Combinaciones válidas: 2 scalping · 1 day + 1 scalping · 1 swing +
+              1 day/scalping.</span>
+          </div>
+        </div>
+
+        <!-- Proceso de Revisión -->
+        <div class="section-title">
+          <span class="icon">↺</span>
+          <h2>Proceso de Revisión</h2>
+          <div class="line"></div>
+        </div>
+        <div class="card" style="padding: 0; overflow: hidden; flex: 1;">
+          <table>
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Frecuencia</th>
+                <th>Actividad</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Trades</strong></td>
+                <td style="font-size:7.5pt; color:var(--text-dim);">Cada 10 trades o 1 mes</td>
+                <td style="font-size:7.5pt; color:var(--text-dim);">Revisar ejecuciones, sacar conclusiones y puntos de
+                  mejora</td>
+              </tr>
+              <tr>
+                <td><strong>Backtesting</strong></td>
+                <td style="font-size:7.5pt; color:var(--text-dim);">Cada 30–45 días</td>
+                <td style="font-size:7.5pt; color:var(--text-dim);">Pulir operativas, testear activos/temporalidades,
+                  nuevas formas de ejecución</td>
+              </tr>
+              <tr>
+                <td><strong>Livetesting</strong></td>
+                <td style="font-size:7.5pt; color:var(--text-dim);">Cada 45 días</td>
+                <td style="font-size:7.5pt; color:var(--text-dim);">Revisar trades no ejecutados seguidos en journaling
+                  de Livetesting</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Objetivos -->
+    <div style="margin-top: 10px;">
+      <div class="section-title">
+        <span class="icon">◎</span>
+        <h2>Objetivos</h2>
+        <div class="line"></div>
+      </div>
+      <div class="card">
+        <div class="obj-item"><span class="obj-dot">→</span><span>Preparar trades de especialización cripto</span>
+        </div>
+        <div class="obj-item"><span class="obj-dot">→</span><span>Aprobar examen de especialización cripto</span>
+        </div>
+        <div class="obj-item"><span class="obj-dot">→</span><span>Seguir puliendo operativas de Green, Red y Blue con
+            backtesting y revisiones</span></div>
+        <div class="obj-item"><span class="obj-dot">→</span><span>Ganar experiencia comenzando con riesgo del 1% para
+            maximizar cantidad de trades</span></div>
+        <div class="obj-item"><span class="obj-dot">→</span><span>Integrar conocimientos de desarrollo al trading
+            (automatización, herramientas propias)</span></div>
+        <div class="obj-item"><span class="obj-dot">→</span><span>Explorar oportunidades en el mundo DeFi</span></div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span>Trading Plan v2.0</span>
+      <span>Gestión · Sesiones · Entradas · Reglas</span>
+      <span>2 / 5</span>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- PAGE 3 — ESTRATEGIA BLUE -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      <span class="doc-label">■ Trading Plan v2.0</span>
+      <span class="section-label">03 — Estrategia Blue</span>
+    </div>
+
+    <!-- Blue header summary pills -->
+    <div class="section-title" style="margin-top:0;">
+      <span class="icon">▲</span>
+      <h2 style="color: #6baed6;">Estrategia BLUE — Reglas Completas</h2>
+      <div class="line"></div>
+      <span class="badge badge-blue" style="margin-left:6px;">Day Trading</span>
+      <span class="badge-active" style="margin-left:6px;">✓ ACTIVA</span>
+    </div>
+
+    <div class="card" style="padding: 0; overflow: hidden; margin-bottom:10px;">
+      <table>
+        <tbody>
+          <tr>
+            <td style="width:50%; border-right:1px solid var(--border2);">
+              <div class="card-label" style="margin-bottom:2px;">EMA Clave</div>
+              <div style="font-size:9.5pt; font-weight:700; color:#6baed6;">1H</div>
+              <div style="font-size:7pt; color:var(--text-faint); margin-top:2px;">Contacto esencial</div>
+            </td>
+            <td style="width:50%;">
+              <div class="card-label" style="margin-bottom:2px;">EMA 4H</div>
+              <div style="font-size:9.5pt; font-weight:700; color:#6baed6;">No romper + confirmar</div>
+              <div style="font-size:7pt; color:var(--text-faint); margin-top:2px;">Blue A ideal toca 4H</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="width:50%; border-right:1px solid var(--border2);">
+              <div class="card-label" style="margin-bottom:2px;">Fibo Mín.</div>
+              <div style="font-size:9.5pt; font-weight:700; color:#6baed6;">0.382</div>
+              <div style="font-size:7pt; color:var(--text-faint); margin-top:2px;">Máx. tolerable 0.75</div>
+            </td>
+            <td style="width:50%;">
+              <div class="card-label" style="margin-bottom:2px;">RR Mínimo</div>
+              <div style="font-size:9.5pt; font-weight:700; color:#6baed6;">1.0</div>
+              <div style="font-size:7pt; color:var(--text-faint); margin-top:2px;">Sin esto: descarte</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="two-col" style="flex:1; align-items:start;">
+      <div>
+        <div class="card">
+          <div class="card-label">EMAs en Pullback</div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>El precio debe contactar la EMA 1H. Sin
+              contacto: descarte.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Se tolera ruptura de EMA 1H con
+              confirmación si da entrada a mercado con 1% de RR y sin llegar a 0.75 del impulso.</span></div>
+          <div class="list-item"><span class="bullet bullet-x">✗</span><span>No operar Blues que hayan roto y confirmado
+              EMA 4H (ni algorítmicamente).</span></div>
+          <div class="list-item"><span class="bullet bullet-star">★</span><span><strong>IDEAL:</strong> Blue A — que
+              también contacte EMA 4H.</span></div>
+        </div>
+
+        <div class="card" style="margin-top:6px;">
+          <div class="card-label">Fibo &amp; SL</div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Precio debe llegar mínimo a 0.382. Caso
+              contrario: descarte.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Se tolera hasta 0.75 siempre que no
+              haya roto la EMA 1H (puede aplicar en Blues C con mucha distancia de EMA).</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Siempre tomar la última onda, excepto
+              que comience por encima/debajo de la EMA (ahí tomar todo el movimiento).</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>SL: Cubrir 0.618 o siguiente nivel. Con
+              gran RR, no ser greedy: cubrir 50% entre niveles o siguiente nivel sin comprometer el RR mínimo.</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-label">Entrada &amp; Máximos/Mínimos</div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Diagonales en 2 o 5 minutos como
+              mínimo. Si la EMA 2/5 min viene respetada, también se puede entrar en RCC de la misma.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Entrada: vela siguiente a la ruptura
+              yendo en la misma dirección. Si no, esperar nueva vela que siga la dirección y cierre por debajo de la
+              diagonal.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Ruptura + confirmación sin fuerza o
+              similar a doji: válida como ruptura algorítmica.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>1H: Debe verse clara ruptura y
+              confirmación de máx/mín anteriores (mínimo algorítmica). Sin máximo/mínimo claro: descarte (excepción si
+              EMA 1H viene muy respetada y el impulso la rompe).</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>EMA en impulso: Ruptura debe ser clara
+              con intención — no algorítmica.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span><strong>TP:</strong> Siempre máximo de
+              cuerpo, no mecha.</span></div>
+        </div>
+
+        <div class="card" style="margin-top:6px;">
+          <div class="card-label">HTF &amp; Descartes Automáticos</div>
+          <div class="list-item"><span class="bullet bullet-x">✗</span><span>En rango sin rechazar extremos del mismo:
+              descarte.</span></div>
+          <div class="list-item"><span class="bullet bullet-x">✗</span><span>Impulsos o pullbacks de 1 sola vela muy
+              fuerte: descarte.</span></div>
+          <div class="list-item"><span class="bullet bullet-x">✗</span><span>Patrones en contra activos:
+              descarte.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Zona resistencia diaria o máx/mín
+              histórico: sumar sobrecompra/venta en RSI. Sin ninguno y a contra tendencia: descarte.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Revisar confluencias, resistencias y
+              EMAs que puedan jugar en contra. Entender si el movimiento en LTF es parte de un impulso o
+              pullback.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span>Trading Plan v2.0</span>
+      <span>Reglas Blue</span>
+      <span>3 / 5</span>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- PAGE 4 — ESTRATEGIA RED -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      <span class="doc-label">■ Trading Plan v2.0</span>
+      <span class="section-label">04 — Estrategia Red</span>
+    </div>
+
+    <div class="section-title" style="margin-top:0;">
+      <span class="icon">▲</span>
+      <h2 style="color: #e07070;">Estrategia RED — Reglas Completas</h2>
+      <div class="line"></div>
+      <span class="badge badge-red" style="margin-left:6px;">Day Trading</span>
+      <span class="badge-active" style="margin-left:6px;">✓ ACTIVA</span>
+    </div>
+
+    <div class="card" style="padding: 0; overflow: hidden; margin-bottom:10px;">
+      <table>
+        <tbody>
+          <tr>
+            <td style="width:50%; border-right:1px solid var(--border2);">
+              <div class="card-label" style="margin-bottom:2px;">EMA Clave</div>
+              <div style="font-size:9.5pt; font-weight:700; color:#e07070;">4H</div>
+              <div style="font-size:7pt; color:var(--text-faint); margin-top:2px;">Contacto esencial</div>
+            </td>
+            <td style="width:50%;">
+              <div class="card-label" style="margin-bottom:2px;">EMA 1H</div>
+              <div style="font-size:9.5pt; font-weight:700; color:#e07070;">Acepta posible ruptura</div>
+              <div style="font-size:7pt; color:var(--text-faint); margin-top:2px;">Mientras falta contacto 4H</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="width:50%; border-right:1px solid var(--border2);">
+              <div class="card-label" style="margin-bottom:2px;">Fibo Mín.</div>
+              <div style="font-size:9.5pt; font-weight:700; color:#e07070;">0.382</div>
+              <div style="font-size:7pt; color:var(--text-faint); margin-top:2px;">Máx. operable 0.75</div>
+            </td>
+            <td style="width:50%;">
+              <div class="card-label" style="margin-bottom:2px;">RR Mínimo</div>
+              <div style="font-size:9.5pt; font-weight:700; color:#e07070;">1.5</div>
+              <div style="font-size:7pt; color:var(--text-faint); margin-top:2px;">Sin esto: descarte</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="two-col" style="flex:1; align-items:start;">
+      <div>
+        <div class="card">
+          <div class="card-label">EMAs en Pullback</div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>EMA 4H: esencial que el precio
+              contacte. Sin contacto: descarte.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>EMA 1H: se acepta posible ruptura
+              mientras aún falte contacto de 4H. Se acepta que el precio pueda no tocarla.</span></div>
+          <div class="list-item"><span class="bullet bullet-x">✗</span><span>No aceptar ruptura con confirmación de EMA
+              4H.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Se acepta cierta separación, pero no
+              excesiva (se convertiría en PINK). Se acepta que las EMAs no se hayan cruzado aún.</span></div>
+          <div class="list-item"><span class="bullet bullet-star">★</span><span><strong>IDEAL:</strong> Que hayan
+              cruzado, estén juntas y el precio toque ambas en el pullback.</span></div>
+        </div>
+
+        <div class="card" style="margin-top:6px;">
+          <div class="card-label">Fibo &amp; SL</div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Precio debe llegar mínimo a 0.382. Caso
+              contrario: descarte.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Si pullback llega a 0.75 sin romper EMA
+              4H: operable. Si al llegar a 0.75 ya empezó a romper la EMA 4H: descartada.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Siempre tomar la última onda, excepto
+              que comience por encima/debajo de la EMA (ahí tomar todo el movimiento).</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>SL: Siempre cubriendo EMA 4H o mechas +
+              en lo posible nivel siguiente de Fibo. Con gran RR, no ser greedy.</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-label">Entrada &amp; Máximos/Mínimos</div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Diagonales en 2 o 5 minutos como
+              mínimo. Si la EMA 2/5 min viene respetada, también se puede entrar en RCC.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Entrada: vela siguiente a la ruptura
+              yendo en la misma dirección. Si no, esperar nueva vela que cierre por debajo de la diagonal. Si el precio
+              vuelve por encima: esperar nueva ruptura y confirmación.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Ruptura + confirmación sin fuerza o
+              similar a doji: válida como ruptura algorítmica.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>4H: Debe verse clara ruptura y
+              confirmación de máx/mín anteriores (mínimo algorítmico, ideal con fuerza). Sin máximo/mínimo claro:
+              descarte (excepción si EMA 4H muy respetada y el nuevo impulso la rompe).</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Si vela de ruptura no se confirma: las
+              velas siguientes que sigan la tendencia deben superar el máximo dejado por la ruptura.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>EMA en impulso: Ruptura debe ser clara
+              con intención — no algorítmica.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span><strong>TP:</strong> Siempre máximo de
+              cuerpo, no mecha.</span></div>
+        </div>
+
+        <div class="card" style="margin-top:6px;">
+          <div class="card-label">HTF &amp; Descartes Automáticos</div>
+          <div class="list-item"><span class="bullet bullet-x">✗</span><span>En rango sin rechazar extremos del mismo:
+              descarte.</span></div>
+          <div class="list-item"><span class="bullet bullet-x">✗</span><span>Impulsos o pullbacks de 1 sola vela muy
+              fuerte: descarte.</span></div>
+          <div class="list-item"><span class="bullet bullet-x">✗</span><span>Patrones en contra activos:
+              descarte.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Zona resistencia diaria o máx/mín
+              histórico: sumar sobrecompra/venta RSI. Sin ninguno y a contra tendencia: descarte.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Revisar confluencias y EMAs que puedan
+              jugar en contra. Entender si el movimiento en LTF es parte de un impulso o pullback.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span>Trading Plan v2.0</span>
+      <span>Reglas Red</span>
+      <span>4 / 5</span>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- PAGE 5 — LEARNING -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="page">
+    <div class="page-header">
+      <span class="doc-label">■ Trading Plan v2.0</span>
+      <span class="section-label">05 — Learning · Psicología · Iteraciones</span>
+    </div>
+
+    <div class="section-title" style="margin-top:0;">
+      <span class="icon">◈</span>
+      <h2>Learning</h2>
+      <div class="line"></div>
+    </div>
+
+    <div class="two-col" style="margin-bottom:10px;">
+      <div style="display: flex; flex-direction: column;">
+        <div class="card" style="flex: 1;">
+          <div class="card-label">Backtesting</div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Hacer backtesting de las estrategias a
+              incorporar al menos <strong>4 días a la semana</strong>.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Con un mínimo de <strong>6 sesiones por
+                semana</strong> — equivalente a 1.5 veces por día.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Intercalar entre backtesting
+              <strong>visto</strong> (reforzar reglas y puntos clave) y backtesting <strong>oculto</strong> (poner a
+              prueba esos puntos en condiciones reales sin sesgo).</span></div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column;">
+        <div class="card" style="flex: 1; display: flex; flex-direction: column;">
+          <div class="card-label">Formación &amp; Desarrollo</div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Progresar en el curso Esses.</span>
+          </div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Progresar en el aprendizaje de
+              QuantConnect.</span></div>
+          <div class="list-item"><span class="bullet bullet-arrow">→</span><span>Implementar herramientas de AI en el
+              trading.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="padding: 0; overflow: hidden; margin-bottom: 10px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Área</th>
+            <th>Objetivo Semanal</th>
+            <th>Método</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Backtesting</strong></td>
+            <td>4 días / 6 sesiones mín.</td>
+            <td style="color:var(--text-dim); font-size:7.5pt;">Alternar visto y oculto</td>
+          </tr>
+          <tr>
+            <td><strong>Curso Esses</strong></td>
+            <td>Progreso continuo</td>
+            <td style="color:var(--text-dim); font-size:7.5pt;">Avanzar módulos activos</td>
+          </tr>
+          <tr>
+            <td><strong>QuantConnect</strong></td>
+            <td>Progreso continuo</td>
+            <td style="color:var(--text-dim); font-size:7.5pt;">Implementación de algoritmos</td>
+          </tr>
+          <tr>
+            <td><strong>Herramientas AI</strong></td>
+            <td>Exploración activa</td>
+            <td style="color:var(--text-dim); font-size:7.5pt;">Integrar AI al flujo de trading</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+
+    <div class="divider" style="margin: 10px 0;"></div>
+
+    <!-- Plan Psicológico -->
+    <div class="section-title" style="margin-top:0;">
+      <span class="icon">◈</span>
+      <h2>Plan Psicológico — Checklist Pre-Sesión</h2>
+      <div class="line"></div>
+    </div>
+    <div class="card" style="margin-bottom:8px;">
+      <div class="check-item">
+        <div class="check-box"></div><span>Lista de seguimiento completada durante la sesión de Londres, previo a
+          apertura de EEUU.</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div><span>Alarmas configuradas en puntos clave para no estar pendiente del gráfico
+          constantemente.</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div><span>Setup dibujado: entrada, SL y TP marcados — orden preparada en MT5.</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div><span>Estado emocional y corporal anotado en el journal antes de operar.</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div><span>¿Enfermo, desmotivado o con problemas personales? → Si la respuesta es
+          <strong>SÍ: NO OPERAR.</strong></span>
+      </div>
+    </div>
+
+    <!-- Preguntas Iteraciones -->
+    <div class="section-title">
+      <span class="icon">❓</span>
+      <h2>Preguntas para Próximas Iteraciones</h2>
+      <div class="line"></div>
+    </div>
+    <div class="card" style="margin-bottom:0;">
+      <div class="two-col" style="gap: 15px;">
+        <div style="font-size: 7.2pt;">
+          <div class="q-item"><span class="q-num">01.</span><span>¿Cuánto tiempo real puedo dedicar cada día a observar
+              el mercado sin que afecte a mi vida personal?</span></div>
+          <div class="q-item"><span class="q-num">02.</span><span>¿Me siento más cómodo teniendo más o menos
+              oportunidades para ejecutar cada semana?</span></div>
+          <div class="q-item"><span class="q-num">03.</span><span>¿Prefiero tomar decisiones rápido o prefiero tener más
+              tiempo para ello?</span></div>
+          <div class="q-item"><span class="q-num">04.</span><span>¿Tolero períodos largos en una operación o prefiero
+              trades más cortos y decisivos?</span></div>
+          <div class="q-item"><span class="q-num">05.</span><span>¿Busco cualquier excusa para entrar o cualquier excusa
+              para no entrar?</span></div>
+          <div class="q-item"><span class="q-num">06.</span><span>¿Qué condiciones del mercado me generan más duda y
+              cuáles me dan más claridad?</span></div>
+          <div class="q-item"><span class="q-num">07.</span><span>¿Qué estrategia me da mayor porcentaje de acierto
+              según mis datos? ¿Y la peor?</span></div>
+          <div class="q-item"><span class="q-num">08.</span><span>¿En qué estrategia me siento más seguro? ¿Y más
+              rentable?</span></div>
+          <div class="q-item"><span class="q-num">09.</span><span>¿Tengo identificada alguna situación técnica en la que
+              mayormente tenga pérdidas?</span></div>
+        </div>
+        <div style="font-size: 7.2pt;">
+          <div class="q-item"><span class="q-num">10.</span><span>¿Tengo identificada alguna situación psicológica en la
+              que mayormente tenga pérdidas?</span></div>
+          <div class="q-item"><span class="q-num">11.</span><span>¿Qué R:R es más realista para mi estilo?</span></div>
+          <div class="q-item"><span class="q-num">12.</span><span>¿Qué R:R me haría sentir más cómodo durante la gestión
+              de la posición?</span></div>
+          <div class="q-item"><span class="q-num">13.</span><span>¿Qué condiciones previas al trade se repiten en mis
+              mejores resultados en HTF?</span></div>
+          <div class="q-item"><span class="q-num">14.</span><span>¿En qué estrategia me dominan más las emociones? ¿Cómo
+              corregirlo?</span></div>
+          <div class="q-item"><span class="q-num">15.</span><span>¿Qué tipo de entrada me da más control emocional:
+              limit o mercado?</span></div>
+          <div class="q-item"><span class="q-num">16.</span><span>¿Me siento cómodo buscando la reversión o prefiero
+              unirme a la continuación?</span></div>
+          <div class="q-item"><span class="q-num">17.</span><span>¿Estoy perdiendo oportunidades por ser demasiado
+              exigente, o perdiendo trades por no serlo?</span></div>
+          <div class="q-item"><span class="q-num">18.</span><span>Si solo pudiera quedarme con 1 o 2 Setup que me
+              funcionen, ¿cuáles serían?</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span>Trading Plan v2.0</span>
+      <span>Learning · Psicología · Iteraciones</span>
+      <span>5 / 5</span>
+    </div>
+  </div>
+
+
+
+</body>
+
+</html>
