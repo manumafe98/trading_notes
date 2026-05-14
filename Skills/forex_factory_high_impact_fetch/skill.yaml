@@ -1,7 +1,0 @@
-name: forex_factory_high_impact_fetch
-description: Fetches USD high impact news from Forex Factory for a specific date, filtered by Argentina business hours (10:30-13 or 11:30-14 depending on DST)
-parameters:
-  - name: date
-    type: string
-    required: true
-    description: Date in dd/mm/yyyy format or natural language like "1st of May 2025"
