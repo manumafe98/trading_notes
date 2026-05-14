@@ -58,18 +58,30 @@ The script:
 
 ## Output Example
 
-```
-Found 3 local skill(s):
-  - forex-factory-bank-holiday-fetch
-  - forex-factory-high-impact-fetch
-  - key-levels-in-range
+The script prints a clear table report with two columns: **Skill Name** and **Action**, plus a **Details** column for context.
 
-  [CREATE] key-levels-in-range
-  [UPDATE] forex-factory-high-impact-fetch
-  [OK]     forex-factory-bank-holiday-fetch
-
-Done. Created: 1, Updated: 1, Unchanged: 1
 ```
+Found 4 local skill(s), 20 orphaned.
+
++------------------------------------+------------+----------------------------------------------------+
+| Skill Name                         | Action     | Details                                            |
++------------------------------------+------------+----------------------------------------------------+
+| key-levels-in-range                | CREATED    | New skill added                                    |
+| forex-factory-high-impact-fetch    | UPDATED    | SKILL.md changed                                   |
+| forex-factory-bank-holiday-fetch   | UNCHANGED  | No changes                                         |
+| sync-skills                        | UNCHANGED  | No changes                                         |
+| branch-pr                          | ORPHANED   | Exists globally but not in repo                    |
+| sdd-apply                          | ORPHANED   | Exists globally but not in repo                    |
++------------------------------------+------------+----------------------------------------------------+
+
+Summary: 1 created, 1 updated, 2 unchanged, 2 orphaned
+```
+
+**Actions explained:**
+- **CREATED** — Skill did not exist in global config; new folder and SKILL.md were added
+- **UPDATED** — Skill existed but SKILL.md content changed; overwritten with latest version
+- **UNCHANGED** — Skill exists and content matches; nothing done
+- **ORPHANED** — Skill exists in global config but not in the local repo (stale/legacy)
 
 ## Adding a New Skill
 

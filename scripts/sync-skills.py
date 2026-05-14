@@ -17,10 +17,18 @@ import re
 import sys
 import shutil
 from pathlib import Path
+from dataclasses import dataclass
 
 # Config
 SOURCE_ROOT = Path("E:/repos/trading_notes/Skills")
 TARGET_ROOT = Path("C:/Users/Manumafe/.config/opencode/skills")
+
+
+@dataclass
+class SkillResult:
+    name: str
+    action: str  # CREATED, UPDATED, UNCHANGED, ORPHANED, ERROR
+    detail: str = ""
 
 
 def extract_skill_name(skill_md_path: Path) -> str | None:
@@ -31,7 +39,6 @@ def extract_skill_name(skill_md_path: Path) -> str | None:
         print(f"  ERROR: Cannot read {skill_md_path}: {e}")
         return None
 
-    # Look for name: in the first 10 lines
     for line in content.splitlines()[:10]:
         match = re.match(r'^name:\s*(.+?)\s*$', line)
         if match:
@@ -50,16 +57,14 @@ def discover_local_skills() -> dict[str, Path]:
         if not entry.is_dir():
             continue
         if entry.name.startswith("_"):
-            continue  # skip _shared
+            continue
 
         skill_md = entry / "SKILL.md"
         if not skill_md.exists():
-            print(f"  SKIP: {entry.name}/ — no SKILL.md found")
             continue
 
         skill_name = extract_skill_name(skill_md)
         if not skill_name:
-            print(f"  WARN: {entry.name}/SKILL.md has no 'name:' in frontmatter, using folder name")
             skill_name = entry.name
 
         skills[skill_name] = skill_md
@@ -83,8 +88,35 @@ def discover_global_skills() -> set[str]:
     return skills
 
 
+def print_table(results: list[SkillResult]):
+    """Print a simple two-column ASCII table."""
+    if not results:
+        print("  No skills to report.")
+        return
+
+    # Calculate column widths
+    name_width = max(len(r.name) for r in results)
+    action_width = max(len(r.action) for r in results)
+    name_width = max(name_width, 11)  # min header width
+    action_width = max(action_width, 6)  # min header width
+
+    # Header
+    sep = f"+-{'-' * (name_width + 2)}-+{'-' * (action_width + 2)}-+-{'-' * 50}-+"
+    header = f"| {'Skill Name':<{name_width}} | {'Action':<{action_width}} | {'Details':<50} |"
+
+    print(sep)
+    print(header)
+    print(sep)
+
+    # Rows
+    for r in results:
+        print(f"| {r.name:<{name_width}} | {r.action:<{action_width}} | {r.detail:<50} |")
+
+    print(sep)
+
+
 def sync_skills(dry_run: bool = False):
-    """Main sync logic."""
+    """Main sync logic with table report."""
     print(f"Source : {SOURCE_ROOT}")
     print(f"Target : {TARGET_ROOT}")
     print(f"Dry run: {dry_run}")
@@ -97,58 +129,53 @@ def sync_skills(dry_run: bool = False):
         print("No local skills found to sync.")
         return
 
-    print(f"Found {len(local_skills)} local skill(s):")
-    for name in sorted(local_skills.keys()):
-        print(f"  - {name}")
-    print()
+    results: list[SkillResult] = []
 
-    synced = 0
-    updated = 0
-    unchanged = 0
-
-    for skill_name, source_path in sorted(local_skills.items()):
+    # Process local skills
+    for skill_name in sorted(local_skills.keys()):
+        source_path = local_skills[skill_name]
         target_dir = TARGET_ROOT / skill_name
         target_path = target_dir / "SKILL.md"
 
-        action = None
-
         if not target_path.exists():
-            action = "CREATE"
+            if not dry_run:
+                target_dir.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source_path, target_path)
+            results.append(SkillResult(name=skill_name, action="CREATED", detail="New skill added"))
         else:
-            # Compare content
             source_content = source_path.read_text(encoding="utf-8")
             target_content = target_path.read_text(encoding="utf-8")
             if source_content != target_content:
-                action = "UPDATE"
+                if not dry_run:
+                    target_dir.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(source_path, target_path)
+                results.append(SkillResult(name=skill_name, action="UPDATED", detail="SKILL.md changed"))
             else:
-                action = "UNCHANGED"
+                results.append(SkillResult(name=skill_name, action="UNCHANGED", detail="No changes"))
 
-        if action == "CREATE":
-            print(f"  [CREATE] {skill_name}")
-            if not dry_run:
-                target_dir.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(source_path, target_path)
-            synced += 1
-        elif action == "UPDATE":
-            print(f"  [UPDATE] {skill_name}")
-            if not dry_run:
-                target_dir.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(source_path, target_path)
-            updated += 1
-        else:
-            print(f"  [OK]     {skill_name}")
-            unchanged += 1
-
-    # Check for orphaned global skills (exist globally but not locally)
+    # Check orphaned global skills
     orphaned = global_skills - set(local_skills.keys())
-    if orphaned:
-        print(f"\n  Orphaned global skills (not in local repo): {len(orphaned)}")
-        for name in sorted(orphaned):
-            print(f"    - {name}")
+    for name in sorted(orphaned):
+        results.append(SkillResult(name=name, action="ORPHANED", detail="Exists globally but not in repo"))
 
-    print(f"\nDone. Created: {synced}, Updated: {updated}, Unchanged: {unchanged}")
+    # Sort results: CREATED, UPDATED, ORPHANED, UNCHANGED, ERROR
+    action_order = {"CREATED": 0, "UPDATED": 1, "ORPHANED": 2, "UNCHANGED": 3, "ERROR": 4}
+    results.sort(key=lambda r: (action_order.get(r.action, 5), r.name))
+
+    # Print report
+    print(f"Found {len(local_skills)} local skill(s), {len(orphaned)} orphaned.\n")
+    print_table(results)
+
+    # Summary
+    counts = {"CREATED": 0, "UPDATED": 0, "UNCHANGED": 0, "ORPHANED": 0, "ERROR": 0}
+    for r in results:
+        counts[r.action] = counts.get(r.action, 0) + 1
+
+    print(f"\nSummary: {counts['CREATED']} created, {counts['UPDATED']} updated, "
+          f"{counts['UNCHANGED']} unchanged, {counts['ORPHANED']} orphaned")
+
     if dry_run:
-        print("(This was a dry run — no files were actually written.)")
+        print("\n(This was a dry run -- no files were actually written.)")
 
 
 if __name__ == "__main__":
