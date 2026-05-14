@@ -1,5 +1,5 @@
 //@version=6
-indicator("PDH PDL", overlay=true, max_lines_count=500, max_labels_count=500)
+indicator("Key Levels", overlay=true, max_lines_count=500, max_labels_count=500)
  
 // ── Previous Day ──
 grpDay     = "Previous Day"
@@ -34,6 +34,7 @@ colorMonthOpen = input.color(color.purple,   title="Monthly Open Color",group=gr
 // ── General ──
 grpGeneral = "General"
 cutOnTouch = input.bool(true, title="Cut line when price touches it", group=grpGeneral)
+showStatusTable = input.bool(false, title="Show Status Table", group=grpGeneral)
  
 // =============================================================================
 // FIX 1 - DIRECTIONAL TOUCH DETECTION + GAP CONSUMPTION
@@ -317,6 +318,9 @@ var label monthLowLabel  = na
 var label openLabel      = na
 var label weekOpenLabel  = na
 var label monthOpenLabel = na
+
+// Status table for MCP consumption
+var table statusTbl = table.new(position.bottom_left, 4, 10)
  
 // Delete previous drawings
 if not na(highLine)
@@ -434,3 +438,98 @@ if showMO and not na(monthOpen) and not na(moStartTime)
     int x2 = cutOnTouch ? endTime(moHitTime) : time
     monthOpenLine  := line.new(x1=moStartTime, y1=monthOpen, x2=x2, y2=monthOpen, xloc=xloc.bar_time, color=colorMonthOpen, width=1)
     monthOpenLabel := label.new(x=x2, y=monthOpen, xloc=xloc.bar_time, yloc=yloc.price, text="M", textcolor=colorMonthOpen, style=label.style_none, size=size.small, textalign=text.align_left)
+
+// =============================================================================
+// Status Table for MCP consumption
+// =============================================================================
+if barstate.islast
+    color textCol = showStatusTable ? color.white : color.new(color.white, 100)
+    table.set_bgcolor(statusTbl, showStatusTable ? color.new(color.black, 80) : color.new(color.black, 100))
+    table.set_border_width(statusTbl, showStatusTable ? 1 : 0)
+    table.set_frame_width(statusTbl, showStatusTable ? 1 : 0)
+
+    int row = 0
+    table.cell(statusTbl, 0, row, "Level",     text_color=textCol, text_size=size.tiny)
+    table.cell(statusTbl, 1, row, "Price",     text_color=textCol, text_size=size.tiny)
+    table.cell(statusTbl, 2, row, "Mitigated", text_color=textCol, text_size=size.tiny)
+    table.cell(statusTbl, 3, row, "HitTime",   text_color=textCol, text_size=size.tiny)
+    row := row + 1
+
+    // PDH
+    if showPDH and not na(pdhPrice) and not pdhSuppressed
+        table.cell(statusTbl, 0, row, "PDH", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, str.tostring(pdhPrice), text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 2, row, na(pdhHitTime) ? "NO" : "YES", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 3, row, na(pdhHitTime) ? "na" : str.tostring(pdhHitTime), text_color=textCol, text_size=size.tiny)
+        row := row + 1
+
+    // PDL
+    if showPDL and not na(pdlPrice) and not pdlSuppressed
+        table.cell(statusTbl, 0, row, "PDL", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, str.tostring(pdlPrice), text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 2, row, na(pdlHitTime) ? "NO" : "YES", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 3, row, na(pdlHitTime) ? "na" : str.tostring(pdlHitTime), text_color=textCol, text_size=size.tiny)
+        row := row + 1
+
+    // PWH
+    if showPWH and not na(pwhPrice) and not pwhSuppressed
+        table.cell(statusTbl, 0, row, "PWH", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, str.tostring(pwhPrice), text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 2, row, na(pwhHitTime) ? "NO" : "YES", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 3, row, na(pwhHitTime) ? "na" : str.tostring(pwhHitTime), text_color=textCol, text_size=size.tiny)
+        row := row + 1
+
+    // PWL
+    if showPWL and not na(pwlPrice) and not pwlSuppressed
+        table.cell(statusTbl, 0, row, "PWL", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, str.tostring(pwlPrice), text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 2, row, na(pwlHitTime) ? "NO" : "YES", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 3, row, na(pwlHitTime) ? "na" : str.tostring(pwlHitTime), text_color=textCol, text_size=size.tiny)
+        row := row + 1
+
+    // PMH
+    if showPMH and not na(pmhPrice)
+        table.cell(statusTbl, 0, row, "PMH", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, str.tostring(pmhPrice), text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 2, row, na(pmhHitTime) ? "NO" : "YES", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 3, row, na(pmhHitTime) ? "na" : str.tostring(pmhHitTime), text_color=textCol, text_size=size.tiny)
+        row := row + 1
+
+    // PML
+    if showPML and not na(pmlPrice)
+        table.cell(statusTbl, 0, row, "PML", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, str.tostring(pmlPrice), text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 2, row, na(pmlHitTime) ? "NO" : "YES", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 3, row, na(pmlHitTime) ? "na" : str.tostring(pmlHitTime), text_color=textCol, text_size=size.tiny)
+        row := row + 1
+
+    // DO
+    if showDO and not na(dayOpen)
+        table.cell(statusTbl, 0, row, "DO", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, str.tostring(dayOpen), text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 2, row, na(doHitTime) ? "NO" : "YES", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 3, row, na(doHitTime) ? "na" : str.tostring(doHitTime), text_color=textCol, text_size=size.tiny)
+        row := row + 1
+
+    // WO
+    if showWO and not na(weekOpen)
+        table.cell(statusTbl, 0, row, "WO", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, str.tostring(weekOpen), text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 2, row, na(woHitTime) ? "NO" : "YES", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 3, row, na(woHitTime) ? "na" : str.tostring(woHitTime), text_color=textCol, text_size=size.tiny)
+        row := row + 1
+
+    // MO
+    if showMO and not na(monthOpen)
+        table.cell(statusTbl, 0, row, "MO", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, str.tostring(monthOpen), text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 2, row, na(moHitTime) ? "NO" : "YES", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 3, row, na(moHitTime) ? "na" : str.tostring(moHitTime), text_color=textCol, text_size=size.tiny)
+        row := row + 1
+
+    // Clear any stale rows
+    for i = row to 9
+        table.cell(statusTbl, 0, i, "", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, i, "", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 2, i, "", text_color=textCol, text_size=size.tiny)
+        table.cell(statusTbl, 3, i, "", text_color=textCol, text_size=size.tiny)

@@ -2,7 +2,7 @@
 // © tradeforopp
 
 //@version=6
-indicator("ICT Killzones & Pivots [TFO]", "ICT Killzones & Pivots [TFO]", true, max_labels_count = 500, max_lines_count = 500, max_boxes_count = 500) 
+indicator("ICT Killzones", "ICT Killzones & Pivots [TFO]", true, max_labels_count = 500, max_lines_count = 500, max_boxes_count = 500) 
 
 
 // ---------------------------------------- Constant Functions --------------------------------------------------
@@ -44,6 +44,7 @@ lbl_size            = get_size(input.string('Normal', "Label Size", options = ['
 txt_color           = input.color(color.black, "Text Color", tooltip = "The color of all label and table text", group = g_SETTINGS)
 use_cutoff          = input.bool(false, "Drawing Cutoff Time", inline = "CO", tooltip = "When enabled, all pivots and open price lines will stop extending at this time", group = g_SETTINGS)
 cutoff              = input.session("1800-1801", "", inline = "CO", group = g_SETTINGS)
+showStatusTable     = input.bool(false, "Show Status Table", group = g_SETTINGS)
 
 var tf_limit_is_equal_or_more_chart_tf = timeframe.in_seconds('') <= timeframe.in_seconds(tf_limit)
 
@@ -53,25 +54,25 @@ show_kz_text        = input.bool(true, "Display Text", inline = "KZ", group = g_
 
 use_asia            = input.bool(true, "", inline = "ASIA", group = g_KZ)
 as_txt              = input.string("Asia", "", inline = "ASIA", group = g_KZ)
-asia                = input.session("2000-0000", "", inline = "ASIA", group = g_KZ)
-as_color            = input.color(color.blue, "", inline = "ASIA", group = g_KZ)
+asia                = input.session("2000-0100", "", inline = "ASIA", group = g_KZ)
+as_color            = input.color(#fbc02d, "", inline = "ASIA", group = g_KZ)
 
 use_london          = input.bool(true, "", inline = "LONDON", group = g_KZ)
 lo_txt              = input.string("London", "", inline = "LONDON", group = g_KZ)
-london              = input.session("0200-0500", "", inline = "LONDON", group = g_KZ)
-lo_color            = input.color(color.red, "", inline = "LONDON", group = g_KZ)
+london              = input.session("0200-0800", "", inline = "LONDON", group = g_KZ)
+lo_color            = input.color(#fbc02d, "", inline = "LONDON", group = g_KZ)
 
-use_nyam            = input.bool(true, "", inline = "NYAM", group = g_KZ)
+use_nyam            = input.bool(false, "", inline = "NYAM", group = g_KZ)
 na_txt              = input.string("NY AM", "", inline = "NYAM", group = g_KZ)
 nyam                = input.session("0930-1100", "", inline = "NYAM", group = g_KZ)
 na_color            = input.color(#089981, "", inline = "NYAM", group = g_KZ)
 
-use_nylu            = input.bool(true, "", inline = "NYLU", group = g_KZ)
+use_nylu            = input.bool(false, "", inline = "NYLU", group = g_KZ)
 nl_txt              = input.string("NY Lunch", "", inline = "NYLU", group = g_KZ)
 nylu                = input.session("1200-1300", "", inline = "NYLU", group = g_KZ)
 nl_color            = input.color(color.yellow, "", inline = "NYLU", group = g_KZ)
 
-use_nypm            = input.bool(true, "", inline = "NYPM", group = g_KZ)
+use_nypm            = input.bool(false, "", inline = "NYPM", group = g_KZ)
 np_txt              = input.string("NY PM", "", inline = "NYPM", group = g_KZ)
 nypm                = input.session("1330-1600", "", inline = "NYPM", group = g_KZ)
 np_color            = input.color(color.purple, "", inline = "NYPM", group = g_KZ)
@@ -85,17 +86,16 @@ show_pivots         = input.bool(true, "Show Pivots", inline = "PV", group = g_L
 use_alerts          = input.bool(true, "Alert Broken Pivots", inline = "PV", tooltip = "The desired killzones must be enabled at the time that an alert is created, along with the show pivots option, in order for alerts to work", group = g_LABELS)
 show_midpoints      = input.bool(false, "Show Pivot Midpoints", inline = "mp", group = g_LABELS)
 stop_midpoints      = input.bool(true, "Stop Once Mitigated", inline = "mp", group = g_LABELS) 
-show_labels         = input.bool(true, "Show Pivot Labels", inline = "LB", tooltip = "Show labels denoting each killzone's high and low. Optionally choose to show the price of each level. Right side will show labels on the right-hand side of the chart until they are reached", group = g_LABELS)
+show_labels         = input.bool(true, "Show Pivot Labels", inline = "LB", tooltip = "Show labels denoting each killzone's high and low. Optionally choose to show the price of each level", group = g_LABELS)
 label_price         = input.bool(false, "Display Price", inline = "LB", group = g_LABELS)
-label_right         = input.bool(false, "Right Side", inline = "LB", group = g_LABELS)
 ext_pivots          = input.string("Until Mitigated", "Extend Pivots...", options = ['Until Mitigated', 'Past Mitigation'], group = g_LABELS)
 ext_which           = input.string("Most Recent", "...From Which Sessions", options = ['Most Recent', 'All'], group = g_LABELS)
 
-ash_str             = input.string("AS.H", "Killzone 1 Labels", inline = "L_AS", group = g_LABELS)
-asl_str             = input.string("AS.L", "", inline = "L_AS", group = g_LABELS)
+ash_str             = input.string("ASH", "Killzone 1 Labels", inline = "L_AS", group = g_LABELS)
+asl_str             = input.string("ASL", "", inline = "L_AS", group = g_LABELS)
 
-loh_str             = input.string("LO.H", "Killzone 2 Labels", inline = "L_LO", group = g_LABELS)
-lol_str             = input.string("LO.L", "", inline = "L_LO", group = g_LABELS)
+loh_str             = input.string("LDH", "Killzone 2 Labels", inline = "L_LO", group = g_LABELS)
+lol_str             = input.string("LDL", "", inline = "L_LO", group = g_LABELS)
 
 nah_str             = input.string("NYAM.H", "Killzone 3 Labels", inline = "L_NA", group = g_LABELS)
 nal_str             = input.string("NYAM.L", "", inline = "L_NA", group = g_LABELS)
@@ -238,6 +238,7 @@ type kz
 
 	array<float> _range_store
 	float _range_current
+	array<string> _dow_prefix
 
 type hz
 	array<line> LN
@@ -300,27 +301,27 @@ initKZ() =>
     array<kz_helper> res = array.new<kz_helper>()
     if use_asia
         res.push(kz_helper.new(
-             kz.new(as_txt, array.new_box(), array.new_line(), array.new_line(), array.new_line(), array.new_label(), array.new_label(), array.new_bool(), array.new_bool(), array.new_bool(), array.new_float()),
+             kz.new(as_txt, array.new_box(), array.new_line(), array.new_line(), array.new_line(), array.new_label(), array.new_label(), array.new_bool(), array.new_bool(), array.new_bool(), array.new_float(), na, array.new_string()),
              asia, as_color, as_txt, ash_str, asl_str
          ))
     if use_london
         res.push(kz_helper.new(
-             kz.new(lo_txt, array.new_box(), array.new_line(), array.new_line(), array.new_line(), array.new_label(), array.new_label(), array.new_bool(), array.new_bool(), array.new_bool(), array.new_float()),
+             kz.new(lo_txt, array.new_box(), array.new_line(), array.new_line(), array.new_line(), array.new_label(), array.new_label(), array.new_bool(), array.new_bool(), array.new_bool(), array.new_float(), na, array.new_string()),
              london, lo_color, lo_txt, loh_str, lol_str
          ))
     if use_nyam
         res.push(kz_helper.new(
-             kz.new(na_txt, array.new_box(), array.new_line(), array.new_line(), array.new_line(), array.new_label(), array.new_label(), array.new_bool(), array.new_bool(), array.new_bool(), array.new_float()),
+             kz.new(na_txt, array.new_box(), array.new_line(), array.new_line(), array.new_line(), array.new_label(), array.new_label(), array.new_bool(), array.new_bool(), array.new_bool(), array.new_float(), na, array.new_string()),
              nyam, na_color, na_txt, nah_str, nal_str
          ))
     if use_nylu
         res.push(kz_helper.new(
-             kz.new(nl_txt, array.new_box(), array.new_line(), array.new_line(), array.new_line(), array.new_label(), array.new_label(), array.new_bool(), array.new_bool(), array.new_bool(), array.new_float()),
+             kz.new(nl_txt, array.new_box(), array.new_line(), array.new_line(), array.new_line(), array.new_label(), array.new_label(), array.new_bool(), array.new_bool(), array.new_bool(), array.new_float(), na, array.new_string()),
              nylu, nl_color, nl_txt, nlh_str, nll_str
          ))
     if use_nypm
         res.push(kz_helper.new(
-             kz.new(np_txt, array.new_box(), array.new_line(), array.new_line(), array.new_line(), array.new_label(), array.new_label(), array.new_bool(), array.new_bool(), array.new_bool(), array.new_float()),
+             kz.new(np_txt, array.new_box(), array.new_line(), array.new_line(), array.new_line(), array.new_label(), array.new_label(), array.new_bool(), array.new_bool(), array.new_bool(), array.new_float(), na, array.new_string()),
              nypm, np_color, np_txt, nph_str, npl_str
          ))
     res
@@ -372,6 +373,7 @@ var m_label = array.new_label()
 var transparent = #ffffff00
 var ext_current = ext_which == 'Most Recent'
 var ext_past = ext_pivots == 'Past Mitigation'
+var table statusTbl = table.new(position.bottom_left, 3, 35)
 
 update_dwm_info(dwm_info n) =>
     if timeframe.change(n.tf)
@@ -530,11 +532,11 @@ del_kz(kz k) =>
     if k._hi_label.size() > max_days
         k._hi_label.pop().delete()
         k._lo_label.pop().delete()
+        k._dow_prefix.pop()
 
 update_price_string(label L, float P) =>
     S = L.get_text()
-    pre = str.substring(S, 0, str.pos(S, " ")) 
-    str.trim(pre)
+    string pre = str.substring(S, 0, str.pos(S, " ("))
     L.set_text(str.format("{0} ({1})", pre, P))
 
 adjust_in_kz(kz kz, bool t) =>
@@ -568,9 +570,8 @@ adjust_in_kz(kz kz, bool t) =>
                 kzMidLine0.set_xy2(time, math.avg(kzHiLine0.get_y2(), kzLoLine0.get_y2()))
 
         if show_labels and kz._hi_label.size() > 0
-            if label_right
-                kz._hi_label.get(0).set_x(time)
-                kz._lo_label.get(0).set_x(time)
+            kz._hi_label.get(0).set_x(time)
+            kz._lo_label.get(0).set_x(time)
             if high > kz._hi_label.get(0).get_y()
                 kz._hi_label.get(0).set_xy(time, high)
                 if label_price
@@ -591,43 +592,57 @@ adjust_out_kz(kz kz, bool t, bool t_prev) =>
 
     if show_pivots and boxCount > 0
         for i = 0 to boxCount - 1 by 1
-            if not ext_current or i == 0
-                kzHiValid = kz._hi_valid.get(i)
-                if ext_past or kzHiValid
-                    kz._hi_line.get(i).set_x2(time)
-                    if show_labels and label_right
-                        kz._hi_label.get(i).set_x(time)
-                if kzHiValid and high > kz._hi_line.get(i).get_y1()
-                    if use_alerts and i == 0
-                        alert('Broke ' + kz._title + ' High', alert.freq_once_per_bar)
-                    kz._hi_valid.set(i, false)
-                    if show_labels and label_right
-                        kz._hi_label.get(i).set_style(label.style_label_down)
-                else if use_cutoff ? t_co : false
-                    kz._hi_valid.set(i, false)
+            kzHiValid = kz._hi_valid.get(i)
+            if kzHiValid and high > kz._hi_line.get(i).get_y1()
+                if use_alerts and i == 0
+                    alert('Broke ' + kz._title + ' High', alert.freq_once_per_bar)
+                kz._hi_valid.set(i, false)
+            else if use_cutoff ? t_co : false
+                kz._hi_valid.set(i, false)
 
-                kzLoValid = kz._lo_valid.get(i)
-                if ext_past or kzLoValid
+            kzLoValid = kz._lo_valid.get(i)
+            if kzLoValid and low < kz._lo_line.get(i).get_y1()
+                if use_alerts and i == 0
+                    alert("Broke " + kz._title + " Low", alert.freq_once_per_bar)
+                kz._lo_valid.set(i, false)
+            else if use_cutoff ? t_co : false
+                kz._lo_valid.set(i, false)
+
+            if show_midpoints and not t
+                if kz._md_valid.get(i) and low <= kz._md_line.get(i).get_y1() and high >= kz._md_line.get(i).get_y1()
+                    kz._md_valid.set(i, false)
+
+        for i = 0 to boxCount - 1 by 1
+            if not ext_current or i == 0
+                kzHiValid2 = kz._hi_valid.get(i)
+                if ext_past or kzHiValid2
+                    kz._hi_line.get(i).set_x2(time)
+                    if show_labels
+                        kz._hi_label.get(i).set_x(time)
+
+                kzLoValid2 = kz._lo_valid.get(i)
+                if ext_past or kzLoValid2
                     kz._lo_line.get(i).set_x2(time)
-                    if show_labels and label_right
+                    if show_labels
                         kz._lo_label.get(i).set_x(time)
-                if kzLoValid and low < kz._lo_line.get(i).get_y1()
-                    if use_alerts and i == 0
-                        alert("Broke " + kz._title + " Low", alert.freq_once_per_bar)
-                    kz._lo_valid.set(i, false)
-                    if show_labels and label_right
-                        kz._lo_label.get(i).set_style(label.style_label_up)
-                else if use_cutoff ? t_co : false
-                    kz._lo_valid.set(i, false)
 
                 if show_midpoints and not t
                     if stop_midpoints ? kz._md_valid.get(i) : true
                         kz._md_line.get(i).set_x2(time)
-                        if kz._md_valid.get(i) and low <= kz._md_line.get(i).get_y1() and high >= kz._md_line.get(i).get_y1()
-                            kz._md_valid.set(i, false)
-
             else
                 break
+
+get_dow_prefix(int t, string tz) =>
+    int dow = dayofweek(t, tz)
+    switch dow
+        dayofweek.sunday    => "SUN"
+        dayofweek.monday    => "MON"
+        dayofweek.tuesday   => "TUE"
+        dayofweek.wednesday => "WED"
+        dayofweek.thursday  => "THU"
+        dayofweek.friday    => "FRI"
+        dayofweek.saturday  => "SAT"
+        => ""
 
 method manage_kz(kz_helper this) =>
     kz kz = this._kz    
@@ -655,14 +670,12 @@ method manage_kz(kz_helper this) =>
                 array.unshift(kz._lo_valid, true)
 
                 if show_labels
-                    _hi_txt = label_price ? str.format('{0} ({1})', hi_txt, high) : hi_txt
-                    _lo_txt = label_price ? str.format('{0} ({1})', lo_txt, low) : lo_txt
-                    if label_right
-                        kz._hi_label.unshift(label.new(time, high, _hi_txt, xloc = xloc.bar_time, color = transparent, textcolor = txt_color, style = label.style_label_left, size = lbl_size))
-                        kz._lo_label.unshift(label.new(time, low, _lo_txt, xloc = xloc.bar_time, color = transparent, textcolor = txt_color, style = label.style_label_left, size = lbl_size))
-                    else
-                        kz._hi_label.unshift(label.new(time, high, _hi_txt, xloc = xloc.bar_time, color = transparent, textcolor = txt_color, style = label.style_label_down, size = lbl_size))
-                        kz._lo_label.unshift(label.new(time, low, _lo_txt, xloc = xloc.bar_time, color = transparent, textcolor = txt_color, style = label.style_label_up, size = lbl_size))
+                    string dow = get_dow_prefix(time, gmt_tz)
+                    _hi_txt = label_price ? str.format('{0} {1} ({2})', dow, hi_txt, high) : dow + " " + hi_txt
+                    _lo_txt = label_price ? str.format('{0} {1} ({2})', dow, lo_txt, low) : dow + " " + lo_txt
+                    kz._hi_label.unshift(label.new(time, high, _hi_txt, xloc = xloc.bar_time, yloc = yloc.price, color = transparent, textcolor = c, style = label.style_none, size = lbl_size, textalign = text.align_left))
+                    kz._lo_label.unshift(label.new(time, low, _lo_txt, xloc = xloc.bar_time, yloc = yloc.price, color = transparent, textcolor = c, style = label.style_none, size = lbl_size, textalign = text.align_left))
+                    array.unshift(kz._dow_prefix, dow)
 
             del_kz(kz)
         adjust_in_kz(kz, t)
@@ -720,4 +733,39 @@ if show_range and barstate.islast
 
     for [index, value] in _kz
         set_table(tbl, value._kz, index + 1, value.box_txt, not na(time("", value.session, gmt_tz)), value.c)
+
+if barstate.islast
+    color stTextCol = showStatusTable ? color.white : color.new(color.white, 100)
+    table.set_bgcolor(statusTbl, showStatusTable ? color.new(color.black, 80) : color.new(color.black, 100))
+    table.set_border_width(statusTbl, showStatusTable ? 1 : 0)
+    table.set_frame_width(statusTbl, showStatusTable ? 1 : 0)
+
+    int row = 0
+    table.cell(statusTbl, 0, row, "Level", text_color = stTextCol, text_size = size.tiny)
+    table.cell(statusTbl, 1, row, "Price", text_color = stTextCol, text_size = size.tiny)
+    table.cell(statusTbl, 2, row, "Mitigated", text_color = stTextCol, text_size = size.tiny)
+    row += 1
+
+    for [_, kh] in _kz
+        kz k = kh._kz
+        int sz = k._hi_line.size()
+        if sz > 0
+            for i = 0 to sz - 1 by 1
+                string dowPrefix = k._dow_prefix.size() > i ? k._dow_prefix.get(i) : ""
+                string hiLabel = str.format("{0} {1}", dowPrefix, kh.hi_txt)
+                table.cell(statusTbl, 0, row, hiLabel, text_color = stTextCol, text_size = size.tiny)
+                table.cell(statusTbl, 1, row, str.tostring(k._hi_line.get(i).get_y1(), format.mintick), text_color = stTextCol, text_size = size.tiny)
+                table.cell(statusTbl, 2, row, k._hi_valid.get(i) ? "NO" : "YES", text_color = stTextCol, text_size = size.tiny)
+                row += 1
+
+                string loLabel = str.format("{0} {1}", dowPrefix, kh.lo_txt)
+                table.cell(statusTbl, 0, row, loLabel, text_color = stTextCol, text_size = size.tiny)
+                table.cell(statusTbl, 1, row, str.tostring(k._lo_line.get(i).get_y1(), format.mintick), text_color = stTextCol, text_size = size.tiny)
+                table.cell(statusTbl, 2, row, k._lo_valid.get(i) ? "NO" : "YES", text_color = stTextCol, text_size = size.tiny)
+                row += 1
+
+    for i = row to 34
+        table.cell(statusTbl, 0, i, "", text_color = stTextCol, text_size = size.tiny)
+        table.cell(statusTbl, 1, i, "", text_color = stTextCol, text_size = size.tiny)
+        table.cell(statusTbl, 2, i, "", text_color = stTextCol, text_size = size.tiny)
 // ---------------------------------------- Core Logic --------------------------------------------------
