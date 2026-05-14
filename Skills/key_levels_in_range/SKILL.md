@@ -18,7 +18,7 @@ Fetches price levels from ICT Killzones and Key Levels indicators on the active 
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `current_day_of_the_week` | string | yes | Full day name: `"Monday"`, `"Tuesday"`, `"Wednesday"`, `"Thursday"`, `"Friday"` |
+| `current_day_of_the_week` | string | yes | Full day name: `"Sunday"`, `"Monday"`, `"Tuesday"`, `"Wednesday"`, `"Thursday"`, `"Friday"`, `"Saturday"` |
 | `entry_price` | number | yes | Entry price of the trade |
 | `take_profit_price` | number | yes | Take profit price of the trade |
 
@@ -30,7 +30,7 @@ Call `mcp_tradingview_data_get_pine_tables` twice (in parallel):
 
 ```
 Tool: mcp_tradingview_data_get_pine_tables
-Parameters: { study_filter: "Killzones" }
+Parameters: { study_filter: "ICT Killzones" }
 
 Tool: mcp_tradingview_data_get_pine_tables
 Parameters: { study_filter: "Key Levels" }
@@ -74,11 +74,13 @@ Map the `current_day_of_the_week` parameter to its 3-letter uppercase prefix:
 
 | Day | Prefix |
 |-----|--------|
+| Sunday | SUN |
 | Monday | MON |
 | Tuesday | TUE |
 | Wednesday | WED |
 | Thursday | THU |
 | Friday | FRI |
+| Saturday | SAT |
 
 For each filtered label that starts with a 3-letter day prefix followed by a space:
 - If the prefix **matches** the current day → **remove it** (e.g., `"WED ASH"` → `"ASH"`)

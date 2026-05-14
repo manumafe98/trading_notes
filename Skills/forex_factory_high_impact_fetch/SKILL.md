@@ -19,11 +19,13 @@ Fetches USD high-impact economic events from Forex Factory for a specific date, 
 
 ## Instructions
 
-1. Run the Python script located at `Skills/forex_factory_high_impact_fetch/run.py` with the date as argument:
+1. Run the `run.py` script located in this skill folder with the date as argument:
 
 ```bash
-python Skills/forex_factory_high_impact_fetch/run.py <date>
+python run.py <date>
 ```
+
+The script is in the same folder as this SKILL.md. When running from outside the skill folder, use the full path to `run.py`.
 
 2. The script will:
    - Parse the date (supports multiple formats including natural language)

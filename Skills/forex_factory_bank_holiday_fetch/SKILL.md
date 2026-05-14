@@ -18,11 +18,13 @@ Checks whether a given date is a US bank holiday by looking for bank holiday eve
 
 ## Instructions
 
-1. Run the Python script located at `Skills/forex_factory_bank_holiday_fetch/run.py` with the date as argument:
+1. Run the `run.py` script located in this skill folder with the date as argument:
 
 ```bash
-python Skills/forex_factory_bank_holiday_fetch/run.py <date>
+python run.py <date>
 ```
+
+The script is in the same folder as this SKILL.md. When running from outside the skill folder, use the full path to `run.py`.
 
 2. The script will:
    - Parse the date (supports multiple formats including natural language)
