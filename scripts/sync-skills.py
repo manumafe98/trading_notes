@@ -78,6 +78,27 @@ def discover_local_skills() -> dict[str, Path]:
     return skills
 
 
+def sync_shared_folder(dry_run: bool) -> SyncResult | None:
+    shared_source = SOURCE_ROOT / "_shared"
+    shared_target = TARGET_ROOT / "_shared"
+
+    if not shared_source.exists():
+        return None
+
+    action, changes = sync_folder(shared_source, shared_target, dry_run)
+
+    if action == "CREATED":
+        detail = f"New shared folder ({len(get_relative_files(shared_source))} file(s))"
+    elif action == "UPDATED":
+        detail = ", ".join(changes[:5])
+        if len(changes) > 5:
+            detail += f" +{len(changes) - 5} more"
+    else:
+        detail = "No changes"
+
+    return SyncResult(name="_shared", action=action, detail=detail)
+
+
 def discover_global_skills() -> set[str]:
     skills = set()
     if not TARGET_ROOT.exists():
@@ -176,6 +197,10 @@ def sync_skills(dry_run: bool = False):
         return
 
     results: list[SyncResult] = []
+
+    shared_result = sync_shared_folder(dry_run)
+    if shared_result:
+        results.append(shared_result)
 
     for skill_name in sorted(local_skills.keys()):
         source_folder = local_skills[skill_name]
