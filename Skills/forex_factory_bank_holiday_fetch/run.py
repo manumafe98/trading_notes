@@ -4,6 +4,7 @@ import json
 import logging
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
 from _shared.forex_factory import (
     init_session,
     parse_date,
@@ -12,11 +13,14 @@ from _shared.forex_factory import (
     parse_embedded_calendar
 )
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 
 def filter_bank_holiday(event_data):
-    return "bank holiday" in event_data["event"].lower()
+    return "bank holiday" in event_data.get("event", "").lower()
 
 
 def main():
@@ -36,7 +40,16 @@ def main():
         return
 
     html = fetch_forex_factory_calendar(date_obj)
-    result = parse_embedded_calendar(html, date_obj, event_filter=filter_bank_holiday)
+
+    result = parse_embedded_calendar(
+        html,
+        date_obj,
+        event_filter=filter_bank_holiday
+    )
+
+    if "error" in result:
+        print(json.dumps(result))
+        return
 
     print(json.dumps(result, indent=2))
 

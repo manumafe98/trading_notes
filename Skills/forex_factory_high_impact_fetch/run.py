@@ -17,12 +17,16 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 
 def filter_high_impact(event_data):
-    return event_data["currency"] == "USD" and event_data["impact"] == "high"
+    return (
+        event_data.get("currency", "").upper() == "USD"
+        and event_data.get("impact", "").lower() == "high"
+    )
 
 
 def filter_argentina_business_hours(events, date_obj):
     month = date_obj.month
 
+    # Argentina business hours aligned with NY DST periods
     if 3 <= month <= 11:
         start_hour, start_minute = 10, 30
         end_hour, end_minute = 13, 0
@@ -50,15 +54,34 @@ def main():
         return
 
     html = fetch_forex_factory_calendar(date_obj)
-    result = parse_embedded_calendar(html, date_obj, event_filter=filter_high_impact)
+
+    result = parse_embedded_calendar(
+        html,
+        date_obj,
+        event_filter=filter_high_impact
+    )
 
     if "error" in result:
         print(json.dumps(result))
         return
 
-    filtered_events = filter_argentina_business_hours(result["events"], date_obj)
+    filtered_events = filter_argentina_business_hours(
+        result["events"],
+        date_obj
+    )
 
-    print(json.dumps({"date": result["date"], "events": filtered_events}, indent=2))
+    if not filtered_events:
+        print(json.dumps({
+            "date": result["date"],
+            "events": [],
+            "message": "No USD high-impact events in Argentina business hours."
+        }, indent=2))
+        return
+
+    print(json.dumps({
+        "date": result["date"],
+        "events": filtered_events
+    }, indent=2))
 
 
 if __name__ == "__main__":
