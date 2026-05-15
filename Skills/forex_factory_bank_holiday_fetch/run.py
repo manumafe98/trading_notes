@@ -2,7 +2,6 @@ import sys
 import os
 import json
 import logging
-from datetime import datetime
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 from Skills._shared.forex_factory import (
@@ -14,7 +13,6 @@ from Skills._shared.forex_factory import (
 )
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
 
 
 def filter_bank_holiday(event_data):

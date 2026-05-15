@@ -1,12 +1,9 @@
 import re
-import sys
-import json
 import time
 import logging
 from datetime import datetime
 from typing import Optional, Tuple, List, Dict, Any
 import requests
-from bs4 import BeautifulSoup
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)

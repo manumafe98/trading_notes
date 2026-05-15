@@ -171,6 +171,7 @@
   },
   "active": "71905b7ce292c5fb",
   "lastOpenFiles": [
+    "Skills/forex_factory_bank_holiday_fetch/requirements.txt",
     "Skills/sync-skills/SKILL.md",
     "Skills/sync-skills",
     "scripts/sync-skills.py",
@@ -215,7 +216,6 @@
     "Estilos de Trading/Swing Trading.md",
     "Sesiones de Mercado/Rollover.md",
     "Sesiones de Mercado/Sesión Norteamericana.md",
-    "Sesiones de Mercado/Sesión Europea.md",
     "imagenes/spread_post_rollover.png"
   ]
 }
