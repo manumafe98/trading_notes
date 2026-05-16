@@ -1,0 +1,304 @@
+//@version=6
+indicator("ORB + FVG [NY]", overlay=true,
+          max_lines_count=500, max_labels_count=500, max_boxes_count=5)
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  INPUTS
+// ─────────────────────────────────────────────────────────────────────────────
+var string G1 = "⏱  ORB Period  ·  All times: America / New_York"
+var string G2 = "📐  Lines"
+var string G3 = "🏷  Labels"
+var string G4 = "🟦  Zone"
+var string G5 = "📊  FVG"
+
+// ── ORB period ────────────────────────────────────────────────────────────────
+i_orbPeriod = input.string(
+     "5-min  (9:30 – 9:35)",
+     "ORB Period",
+     options  = ["5-min  (9:30 – 9:35)", "15-min  (9:30 – 9:45)"],
+     tooltip  = "Captures the exact High / Low of the first candle of the NY session.\n• 5-min  → single 9:30–9:35 AM candle\n• 15-min → single 9:30–9:45 AM candle\nAll times are New York (America/New_York).",
+     group    = G1)
+
+// ── Lines ─────────────────────────────────────────────────────────────────────
+i_highColor = input.color(color.new(#26a69a, 0), "High Line Color", group=G2)
+i_lowColor  = input.color(color.new(#ef5350, 0), "Low Line Color",  group=G2)
+i_lWidth    = input.int  (2, "Line Width", minval=1, maxval=4,       group=G2)
+i_lStyle    = input.string("Solid", "Line Style",
+     options = ["Solid","Dashed","Dotted"],                           group=G2)
+
+// ── Labels ────────────────────────────────────────────────────────────────────
+i_showLbl   = input.bool  (true,   "Show Labels",                    group=G3)
+i_lblHText  = input.string("ORBH", "High Label Text",                group=G3)
+i_lblLText  = input.string("ORBL", "Low Label Text",                 group=G3)
+i_lblHPos   = input.string("Right","High Label H-Position",
+     options = ["Left","Center","Right"],                             group=G3)
+i_lblLPos   = input.string("Right","Low Label H-Position",
+     options = ["Left","Center","Right"],                             group=G3)
+i_lblVAlign = input.string("Middle","Label Vertical Alignment",
+     options = ["Top","Middle","Bottom"],                             group=G3)
+i_lblSize   = input.string("Small", "Label Size",
+     options = ["Tiny","Small","Normal","Large"],                     group=G3)
+
+// ── Zone ──────────────────────────────────────────────────────────────────────
+i_showZone  = input.bool(true, "Show ORB Zone",                      group=G4)
+i_zoneAlpha = input.int (90,   "Zone Transparency",
+     minval=50, maxval=99,                                            group=G4)
+
+// ── FVG ───────────────────────────────────────────────────────────────────────
+i_fvgBoxLen   = input.int  (22, "Box Length", minval=1,              group=G5)
+i_fvgBullCol  = input.color(color.new(color.green, 90),
+                            "Bull Color",                            group=G5)
+i_fvgBearCol  = input.color(color.new(color.red, 90),
+                            "Bear Color",                            group=G5)
+i_fvgSession  = input.session("0930-1200", "FVG Session (NY)",
+     tooltip = "New York session when FVG detection is active.\nFVGs found outside this window are ignored.\nRemaining FVG is deleted when session ends.",
+                                                                     group=G5)
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  DERIVED CONSTANTS
+// ─────────────────────────────────────────────────────────────────────────────
+NY = "America/New_York"
+
+orbEndMin = i_orbPeriod == "5-min  (9:30 – 9:35)"  ? 35  : 45
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  HELPER FUNCTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+f_ls() =>
+    i_lStyle == "Dashed" ? line.style_dashed  :
+     i_lStyle == "Dotted" ? line.style_dotted : line.style_solid
+
+f_sz() =>
+    i_lblSize == "Tiny"   ? size.tiny   :
+     i_lblSize == "Normal" ? size.normal :
+     i_lblSize == "Large"  ? size.large  : size.small
+
+f_vStyle() =>
+    switch i_lblVAlign
+        "Top"    => label.style_label_down
+        "Bottom" => label.style_label_up
+        =>          label.style_label_center
+
+f_lx(pos, s, e) =>
+    switch pos
+        "Left"   => s
+        "Center" => math.round((s + e) / 2)
+        =>          e
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CURRENT-BAR TIME  (chart timeframe, assumed 1-min)
+// ─────────────────────────────────────────────────────────────────────────────
+nyH = hour      (time, NY)
+nyM = minute    (time, NY)
+nyD = dayofmonth(time, NY)
+
+// ORB windows
+inORBWindow = nyH == 9 and nyM >= 30 and nyM < orbEndMin
+pastORB     = (nyH == 9 and nyM >= orbEndMin) or nyH > 9
+
+// FVG window — uses input.session() for a clean time-range picker UI
+inFVGWindow = not na(time(timeframe.period, i_fvgSession, NY))
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PERSISTENT STATE
+// ─────────────────────────────────────────────────────────────────────────────
+// --- ORB state ---
+var float    orbH            = na
+var float    orbL            = na
+var bool     drawn           = false
+var bool     stopped         = false
+var int      startBar        = na
+var int      sessionStartBar = na
+var line     lnH             = na
+var line     lnL             = na
+var label    lbH             = na
+var label    lbL             = na
+var linefill zFill           = na
+
+// --- FVG state ---
+var box   fvgBox       = na
+var label fvgLabel     = na
+var float fvgTop       = na
+var float fvgBot       = na
+var bool  fvgIsBull    = false
+var bool  fvgWasActive = false
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  RESET  ─  new trading day
+// ─────────────────────────────────────────────────────────────────────────────
+if nyD != nyD[1]
+    orbH            := na
+    orbL            := na
+    drawn           := false
+    stopped         := false
+    startBar        := na
+    sessionStartBar := na
+    lnH             := na
+    lnL             := na
+    lbH             := na
+    lbL             := na
+    zFill           := na
+
+    if not na(fvgBox)
+        box.delete(fvgBox)
+        fvgBox := na
+    if not na(fvgLabel)
+        label.delete(fvgLabel)
+        fvgLabel := na
+    fvgTop       := na
+    fvgBot       := na
+    fvgIsBull    := false
+    fvgWasActive := false
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  ORB — Opening Range Breakout
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ── STEP 0  —  Record the 9:30 bar_index ──────────────────────────────────
+if nyH == 9 and nyM == 30 and na(sessionStartBar)
+    sessionStartBar := bar_index
+
+// ── STEP 1  —  Accumulate the ORB High / Low ──────────────────────────────
+if inORBWindow and not drawn
+    orbH := na(orbH) ? high : math.max(orbH, high)
+    orbL := na(orbL) ? low  : math.min(orbL, low)
+
+// ── STEP 2  —  Draw lines & labels ────────────────────────────────────────
+if pastORB and not drawn and not na(orbH) and not na(orbL)
+    drawn    := true
+    startBar := not na(sessionStartBar) ? sessionStartBar : bar_index
+
+    lnH := line.new(startBar, orbH, bar_index + 1, orbH,
+         color=i_highColor, width=i_lWidth, style=f_ls(), extend=extend.right)
+    lnL := line.new(startBar, orbL, bar_index + 1, orbL,
+         color=i_lowColor,  width=i_lWidth, style=f_ls(), extend=extend.right)
+
+    if i_showZone
+        zFill := linefill.new(lnH, lnL, color.new(color.gray, i_zoneAlpha))
+
+    if i_showLbl
+        lbH := label.new(
+             x         = startBar,
+             y         = orbH,
+             text      = i_lblHText,
+             color     = chart.bg_color,
+             textcolor = i_highColor,
+             style     = f_vStyle(),
+             size      = f_sz())
+        lbL := label.new(
+             x         = startBar,
+             y         = orbL,
+             text      = i_lblLText,
+             color     = chart.bg_color,
+             textcolor = i_lowColor,
+             style     = f_vStyle(),
+             size      = f_sz())
+
+// ── STEP 3  —  Update label X positions every bar ─────────────────────────
+if drawn and not stopped and i_showLbl
+    if not na(lbH)
+        label.set_x(lbH, f_lx(i_lblHPos, startBar, bar_index))
+    if not na(lbL)
+        label.set_x(lbL, f_lx(i_lblLPos, startBar, bar_index))
+
+// ── STEP 4  —  Breakout detection ─────────────────────────────────────────
+if drawn and not stopped and barstate.isconfirmed
+    if close > orbH or close < orbL
+        stopped := true
+
+        line.set_extend(lnH, extend.none)
+        line.set_extend(lnL, extend.none)
+        line.set_x2    (lnH, bar_index)
+        line.set_x2    (lnL, bar_index)
+
+        if i_showLbl
+            if not na(lbH)
+                label.set_x(lbH, f_lx(i_lblHPos, startBar, bar_index))
+            if not na(lbL)
+                label.set_x(lbL, f_lx(i_lblLPos, startBar, bar_index))
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  FVG — Fair Value Gap (last-only, NY-session gated)
+// ═════════════════════════════════════════════════════════════════════════════
+if bar_index >= 2 and barstate.isconfirmed
+
+    // ── Session tracking ─────────────────────────────────────────────────
+    if inFVGWindow
+        fvgWasActive := true
+
+    // ── End-time cleanup: delete FVG when session ends ────────────────────
+    if fvgWasActive and not inFVGWindow and not na(fvgBox)
+        box.delete(fvgBox)
+        label.delete(fvgLabel)
+        fvgBox   := na
+        fvgLabel := na
+        fvgTop   := na
+        fvgBot   := na
+
+    // ── Mitigation: remove if price retraces into the gap ─────────────────
+    if not na(fvgBox)
+        mitigated =
+             (fvgIsBull and close < fvgBot) or
+             (not fvgIsBull and close > fvgTop)
+
+        if mitigated
+            box.delete(fvgBox)
+            label.delete(fvgLabel)
+            fvgBox   := na
+            fvgLabel := na
+            fvgTop   := na
+            fvgBot   := na
+
+    // ── Detection: find new FVGs inside the tracking window ───────────────
+    if inFVGWindow
+
+        isBull = high[2] < low
+        isBear = low[2] > high
+
+        if isBull or isBear
+
+            // Delete previous FVG (last-only policy)
+            if not na(fvgBox)
+                box.delete(fvgBox)
+                label.delete(fvgLabel)
+
+            fvgIsBull := isBull
+
+            fvgTop := isBull ? low : low[2]
+            fvgBot := isBull ? high[2] : high
+
+            fvgBox := box.new(
+                left        = bar_index[2],
+                right       = bar_index[2] + i_fvgBoxLen,
+                top         = fvgTop,
+                bottom      = fvgBot,
+                bgcolor     = isBull ? i_fvgBullCol : i_fvgBearCol,
+                border_color = isBull ? i_fvgBullCol : i_fvgBearCol
+            )
+
+            fvgLabel := label.new(
+                x         = bar_index[2] + math.max(1, i_fvgBoxLen - 3),
+                y         = (fvgTop + fvgBot) / 2,
+                text      = "FVG",
+                color     = color.new(color.white, 100),
+                style     = label.style_label_center,
+                textcolor = isBull ? color.green : color.red,
+                size      = size.small,
+                textalign = text.align_right
+            )
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ALERTS
+// ─────────────────────────────────────────────────────────────────────────────
+alertcondition(barstate.isconfirmed and drawn and not stopped and close > orbH,
+     "ORB Breakout Up",    "1-min close broke ABOVE ORB High")
+alertcondition(barstate.isconfirmed and drawn and not stopped and close < orbL,
+     "ORB Breakdown Down", "1-min close broke BELOW ORB Low")
