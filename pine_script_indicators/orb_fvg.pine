@@ -10,6 +10,7 @@ var string G2 = "📐  Lines"
 var string G3 = "🏷  Labels"
 var string G4 = "🟦  Zone"
 var string G5 = "📊  FVG"
+var string G6 = "📊  FVG Ext"
 
 // ── ORB period ────────────────────────────────────────────────────────────────
 i_orbPeriod = input.string(
@@ -58,6 +59,19 @@ i_maxFvgs     = input.int  (100, "Max Tracked FVGs",
      tooltip = "Maximum number of simultaneous FVG boxes on chart.\nWhen the limit is reached, the oldest FVG is removed to make room for new ones.",
                                                                       group=G5)
 
+// ── FVG Ext ───────────────────────────────────────────────────────────────────
+i_extEnabled   = input.bool  (true,   "Enabled",
+     tooltip = "Draw extension line when the 2nd candle's extreme lies\noutside the FVG gap (not contained between top & bottom).",
+                                                                      group=G6)
+i_extLen       = input.int   (22,     "Line Length",
+     minval=1,
+     tooltip = "Number of bars the extension line spans to the right.",
+                                                                      group=G6)
+i_extWidth     = input.int   (1,      "Line Width",
+     minval=1, maxval=4,                                              group=G6)
+i_extStyle     = input.string("Solid", "Line Style",
+     options = ["Solid","Dashed","Dotted"],                           group=G6)
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  DERIVED CONSTANTS
@@ -84,6 +98,10 @@ f_vStyle() =>
         "Top"    => label.style_label_down
         "Bottom" => label.style_label_up
         =>          label.style_label_center
+
+f_extStyle() =>
+    i_extStyle == "Dashed" ? line.style_dashed  :
+     i_extStyle == "Dotted" ? line.style_dotted : line.style_solid
 
 f_lx(pos, s, e) =>
     switch pos
@@ -129,6 +147,7 @@ var array<label> fvgLabels     = array.new<label>()
 var array<float> fvgTops       = array.new<float>()
 var array<float> fvgBots       = array.new<float>()
 var array<bool>  fvgIsBulls    = array.new<bool>()
+var array<line>  fvgExtLines   = array.new<line>()
 var bool         fvgWasActive  = false
 
 
@@ -152,11 +171,14 @@ if nyD != nyD[1]
         for i = 0 to array.size(fvgBoxes) - 1
             box.delete(array.get(fvgBoxes, i))
             label.delete(array.get(fvgLabels, i))
+            if not na(array.get(fvgExtLines, i))
+                line.delete(array.get(fvgExtLines, i))
     array.clear(fvgBoxes)
     array.clear(fvgLabels)
     array.clear(fvgTops)
     array.clear(fvgBots)
     array.clear(fvgIsBulls)
+    array.clear(fvgExtLines)
     fvgWasActive := false
 
 
@@ -242,11 +264,14 @@ if bar_index >= 2 and barstate.isconfirmed
         for i = 0 to array.size(fvgBoxes) - 1
             box.delete(array.get(fvgBoxes, i))
             label.delete(array.get(fvgLabels, i))
+            if not na(array.get(fvgExtLines, i))
+                line.delete(array.get(fvgExtLines, i))
         array.clear(fvgBoxes)
         array.clear(fvgLabels)
         array.clear(fvgTops)
         array.clear(fvgBots)
         array.clear(fvgIsBulls)
+        array.clear(fvgExtLines)
 
     // ── Mitigation: remove individual FVGs whose gap zone is traded into ──
     if array.size(fvgBoxes) > 0
@@ -263,15 +288,18 @@ if bar_index >= 2 and barstate.isconfirmed
             if mitigated
                 box.delete(array.get(fvgBoxes, i))
                 label.delete(array.get(fvgLabels, i))
+                if not na(array.get(fvgExtLines, i))
+                    line.delete(array.get(fvgExtLines, i))
                 array.remove(fvgBoxes,   i)
                 array.remove(fvgLabels,  i)
                 array.remove(fvgTops,    i)
                 array.remove(fvgBots,    i)
                 array.remove(fvgIsBulls, i)
+                array.remove(fvgExtLines,i)
             i -= 1
 
     // ── Detection: find new FVGs — gated by session AND ORB not broken ────
-    if inFVGWindow and not stopped
+    if inFVGWindow and not stopped[1]
 
         isBull = high[2] < low
         isBear = low[2] > high
@@ -282,11 +310,14 @@ if bar_index >= 2 and barstate.isconfirmed
             if array.size(fvgBoxes) >= i_maxFvgs
                 box.delete(array.get(fvgBoxes, 0))
                 label.delete(array.get(fvgLabels, 0))
-                array.remove(fvgBoxes,   0)
-                array.remove(fvgLabels,  0)
-                array.remove(fvgTops,    0)
-                array.remove(fvgBots,    0)
-                array.remove(fvgIsBulls, 0)
+                if not na(array.get(fvgExtLines, 0))
+                    line.delete(array.get(fvgExtLines, 0))
+                array.remove(fvgBoxes,    0)
+                array.remove(fvgLabels,   0)
+                array.remove(fvgTops,     0)
+                array.remove(fvgBots,     0)
+                array.remove(fvgIsBulls,  0)
+                array.remove(fvgExtLines, 0)
 
             top = isBull ? low : low[2]
             bot = isBull ? high[2] : high
@@ -311,11 +342,27 @@ if bar_index >= 2 and barstate.isconfirmed
                 textalign = text.align_right
             )
 
-            array.push(fvgBoxes,   newBox)
-            array.push(fvgLabels,  newLabel)
-            array.push(fvgTops,    top)
-            array.push(fvgBots,    bot)
-            array.push(fvgIsBulls, isBull)
+            // FVG extension line: 2nd candle extreme outside the FVG gap
+            line newExtLine = na
+            if i_extEnabled
+                extLevel = isBull ? low[1] : high[1]
+                if extLevel < bot or extLevel > top
+                    newExtLine := line.new(
+                        bar_index[1],
+                        extLevel,
+                        bar_index[1] + i_extLen,
+                        extLevel,
+                        color = isBull ? i_fvgBullCol : i_fvgBearCol,
+                        width = i_extWidth,
+                        style = f_extStyle()
+                    )
+
+            array.push(fvgBoxes,    newBox)
+            array.push(fvgLabels,   newLabel)
+            array.push(fvgTops,     top)
+            array.push(fvgBots,     bot)
+            array.push(fvgIsBulls,  isBull)
+            array.push(fvgExtLines, newExtLine)
 
 
 // ─────────────────────────────────────────────────────────────────────────────
