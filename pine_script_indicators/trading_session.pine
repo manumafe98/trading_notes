@@ -1,0 +1,35 @@
+//@version=5
+indicator("Trading Session Highlight", overlay=true)
+
+// ─── TIMEZONE ───────────────────────────────
+tz = input.string(
+     defval  = "America/New_York",
+     title   = "Timezone",
+     options = [
+         "America/New_York",
+         "America/Chicago",
+         "America/Denver",
+         "America/Los_Angeles",
+         "America/Sao_Paulo",
+         "America/Argentina/Buenos_Aires",
+         "Europe/London",
+         "Europe/Paris",
+         "Europe/Berlin",
+         "Asia/Dubai",
+         "Asia/Tokyo",
+         "Asia/Shanghai",
+         "Australia/Sydney",
+         "UTC"
+     ],
+     group = "Timezone")
+
+// ─── SESSION RANGE ───────────────────────────
+session_input = input.session("0930-1600", title="Sesión", group="Session Range")
+
+// ─── STYLE ───────────────────────────────────
+bg_color = input.color(color.new(#2962FF, 85), "Background Color", group="Style")
+
+// ─── LOGIC ───────────────────────────────────
+in_session = not na(time(timeframe.period, session_input, tz))
+
+bgcolor(in_session ? bg_color : na, title="Session Background")
