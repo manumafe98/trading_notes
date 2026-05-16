@@ -1,0 +1,66 @@
+//@version=6
+indicator("FVG - Last Only", overlay=true, max_boxes_count=5, max_labels_count=5)
+
+// Inputs
+boxLength = input.int(22, "Box Length", minval=1)
+
+bullColor = input.color(color.new(color.green,90))
+bearColor = input.color(color.new(color.red,90))
+
+// State
+var box fvgBox = na
+var label fvgLabel = na
+var float top = na
+var float bot = na
+var bool bullish = false
+
+if bar_index >= 2 and barstate.isconfirmed
+
+    // Remove if mitigated
+    if not na(fvgBox)
+
+        mitigated =
+             (bullish and close < bot) or
+             (not bullish and close > top)
+
+        if mitigated
+            box.delete(fvgBox)
+            label.delete(fvgLabel)
+            fvgBox := na
+            fvgLabel := na
+
+    // Detect FVG
+    isBull = high[2] < low
+    isBear = low[2] > high
+
+    if isBull or isBear
+
+        // Delete previous FVG immediately
+        if not na(fvgBox)
+            box.delete(fvgBox)
+            label.delete(fvgLabel)
+
+        bullish := isBull
+
+        top := isBull ? low : low[2]
+        bot := isBull ? high[2] : high
+
+        fvgBox := box.new(
+            left=bar_index[2],
+            right=bar_index[2] + boxLength,
+            top=top,
+            bottom=bot,
+            bgcolor=isBull ? bullColor : bearColor,
+            border_color=isBull ? bullColor : bearColor
+        )
+
+        fvgLabel := label.new(
+            x=bar_index[2] + math.max(1, boxLength - 3),
+            y=(top + bot) / 2,
+            text="FVG",
+            color=color.new(color.white, 100),
+            style=label.style_label_center,
+            textcolor=isBull ? color.green : color.red,
+            size=size.small,
+            textalign=text.align_right
+        )

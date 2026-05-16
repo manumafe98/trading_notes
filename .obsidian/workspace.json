@@ -171,6 +171,7 @@
   },
   "active": "71905b7ce292c5fb",
   "lastOpenFiles": [
+    "pine_script_indicators/fvg_last_only.pine",
     "Skills/forex_factory_high_impact_fetch/__pycache__/run.cpython-311.pyc",
     "Skills/forex_factory_high_impact_fetch/__pycache__",
     "Skills/forex_factory_bank_holiday_fetch/__pycache__/run.cpython-311.pyc",
@@ -183,7 +184,6 @@
     "scripts",
     "Skills/sync-to-global.ps1",
     "Skills/key_levels_in_range/SKILL.md",
-    "Skills/key_levels_in_range",
     "Skills/forex_factory_bank_holiday_fetch/SKILL.md",
     "Skills/forex_factory_high_impact_fetch/SKILL.md",
     "Skills/tradingview_replay/SKILL.md",
