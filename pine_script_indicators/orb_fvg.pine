@@ -1,6 +1,6 @@
 //@version=6
 indicator("ORB + FVG [NY]", overlay=true,
-          max_lines_count=500, max_labels_count=500, max_boxes_count=5)
+          max_lines_count=500, max_labels_count=500, max_boxes_count=500)
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  INPUTS
@@ -51,8 +51,12 @@ i_fvgBullCol  = input.color(color.new(color.green, 90),
 i_fvgBearCol  = input.color(color.new(color.red, 90),
                             "Bear Color",                            group=G5)
 i_fvgSession  = input.session("0930-1200", "FVG Session (NY)",
-     tooltip = "New York session when FVG detection is active.\nFVGs found outside this window are ignored.\nRemaining FVG is deleted when session ends.",
-                                                                     group=G5)
+     tooltip = "New York session when FVG detection starts.\nNew FVGs are detected from session start until the ORB breaks.\nAll remaining FVGs are deleted when the session ends.",
+                                                                      group=G5)
+i_maxFvgs     = input.int  (100, "Max Tracked FVGs",
+     minval=1, maxval=500,
+     tooltip = "Maximum number of simultaneous FVG boxes on chart.\nWhen the limit is reached, the oldest FVG is removed to make room for new ones.",
+                                                                      group=G5)
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -120,12 +124,12 @@ var label    lbL             = na
 var linefill zFill           = na
 
 // --- FVG state ---
-var box   fvgBox       = na
-var label fvgLabel     = na
-var float fvgTop       = na
-var float fvgBot       = na
-var bool  fvgIsBull    = false
-var bool  fvgWasActive = false
+var array<box>   fvgBoxes      = array.new<box>()
+var array<label> fvgLabels     = array.new<label>()
+var array<float> fvgTops       = array.new<float>()
+var array<float> fvgBots       = array.new<float>()
+var array<bool>  fvgIsBulls    = array.new<bool>()
+var bool         fvgWasActive  = false
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -144,15 +148,15 @@ if nyD != nyD[1]
     lbL             := na
     zFill           := na
 
-    if not na(fvgBox)
-        box.delete(fvgBox)
-        fvgBox := na
-    if not na(fvgLabel)
-        label.delete(fvgLabel)
-        fvgLabel := na
-    fvgTop       := na
-    fvgBot       := na
-    fvgIsBull    := false
+    if array.size(fvgBoxes) > 0
+        for i = 0 to array.size(fvgBoxes) - 1
+            box.delete(array.get(fvgBoxes, i))
+            label.delete(array.get(fvgLabels, i))
+    array.clear(fvgBoxes)
+    array.clear(fvgLabels)
+    array.clear(fvgTops)
+    array.clear(fvgBots)
+    array.clear(fvgIsBulls)
     fvgWasActive := false
 
 
@@ -225,7 +229,7 @@ if drawn and not stopped and barstate.isconfirmed
 
 
 // ═════════════════════════════════════════════════════════════════════════════
-//  FVG — Fair Value Gap (last-only, NY-session gated)
+//  FVG — Fair Value Gap (multi-track, ORB-break gated)
 // ═════════════════════════════════════════════════════════════════════════════
 if bar_index >= 2 and barstate.isconfirmed
 
@@ -233,59 +237,72 @@ if bar_index >= 2 and barstate.isconfirmed
     if inFVGWindow
         fvgWasActive := true
 
-    // ── End-time cleanup: delete FVG when session ends ────────────────────
-    if fvgWasActive and not inFVGWindow and not na(fvgBox)
-        box.delete(fvgBox)
-        label.delete(fvgLabel)
-        fvgBox   := na
-        fvgLabel := na
-        fvgTop   := na
-        fvgBot   := na
+    // ── End-time cleanup: delete ALL remaining FVGs when session ends ─────
+    if fvgWasActive and not inFVGWindow and array.size(fvgBoxes) > 0
+        for i = 0 to array.size(fvgBoxes) - 1
+            box.delete(array.get(fvgBoxes, i))
+            label.delete(array.get(fvgLabels, i))
+        array.clear(fvgBoxes)
+        array.clear(fvgLabels)
+        array.clear(fvgTops)
+        array.clear(fvgBots)
+        array.clear(fvgIsBulls)
 
-    // ── Mitigation: remove if price retraces into the gap ─────────────────
-    if not na(fvgBox)
-        mitigated =
-             (fvgIsBull and close < fvgBot) or
-             (not fvgIsBull and close > fvgTop)
+    // ── Mitigation: remove individual FVGs whose gap zone is traded into ──
+    if array.size(fvgBoxes) > 0
+        i = array.size(fvgBoxes) - 1
+        while i >= 0
+            top  = array.get(fvgTops,    i)
+            bot  = array.get(fvgBots,    i)
+            bull = array.get(fvgIsBulls, i)
 
-        if mitigated
-            box.delete(fvgBox)
-            label.delete(fvgLabel)
-            fvgBox   := na
-            fvgLabel := na
-            fvgTop   := na
-            fvgBot   := na
+            mitigated =
+                 (bull and low < bot) or
+                 (not bull and high > top)
 
-    // ── Detection: find new FVGs inside the tracking window ───────────────
-    if inFVGWindow
+            if mitigated
+                box.delete(array.get(fvgBoxes, i))
+                label.delete(array.get(fvgLabels, i))
+                array.remove(fvgBoxes,   i)
+                array.remove(fvgLabels,  i)
+                array.remove(fvgTops,    i)
+                array.remove(fvgBots,    i)
+                array.remove(fvgIsBulls, i)
+            i -= 1
+
+    // ── Detection: find new FVGs — gated by session AND ORB not broken ────
+    if inFVGWindow and not stopped
 
         isBull = high[2] < low
         isBear = low[2] > high
 
         if isBull or isBear
 
-            // Delete previous FVG (last-only policy)
-            if not na(fvgBox)
-                box.delete(fvgBox)
-                label.delete(fvgLabel)
+            // FIFO cap: remove oldest FVG if at the limit
+            if array.size(fvgBoxes) >= i_maxFvgs
+                box.delete(array.get(fvgBoxes, 0))
+                label.delete(array.get(fvgLabels, 0))
+                array.remove(fvgBoxes,   0)
+                array.remove(fvgLabels,  0)
+                array.remove(fvgTops,    0)
+                array.remove(fvgBots,    0)
+                array.remove(fvgIsBulls, 0)
 
-            fvgIsBull := isBull
+            top = isBull ? low : low[2]
+            bot = isBull ? high[2] : high
 
-            fvgTop := isBull ? low : low[2]
-            fvgBot := isBull ? high[2] : high
-
-            fvgBox := box.new(
-                left        = bar_index[2],
-                right       = bar_index[2] + i_fvgBoxLen,
-                top         = fvgTop,
-                bottom      = fvgBot,
-                bgcolor     = isBull ? i_fvgBullCol : i_fvgBearCol,
+            newBox = box.new(
+                left         = bar_index[2],
+                right        = bar_index[2] + i_fvgBoxLen,
+                top          = top,
+                bottom       = bot,
+                bgcolor      = isBull ? i_fvgBullCol : i_fvgBearCol,
                 border_color = isBull ? i_fvgBullCol : i_fvgBearCol
             )
 
-            fvgLabel := label.new(
+            newLabel = label.new(
                 x         = bar_index[2] + math.max(1, i_fvgBoxLen - 3),
-                y         = (fvgTop + fvgBot) / 2,
+                y         = (top + bot) / 2,
                 text      = "FVG",
                 color     = color.new(color.white, 100),
                 style     = label.style_label_center,
@@ -293,6 +310,12 @@ if bar_index >= 2 and barstate.isconfirmed
                 size      = size.small,
                 textalign = text.align_right
             )
+
+            array.push(fvgBoxes,   newBox)
+            array.push(fvgLabels,  newLabel)
+            array.push(fvgTops,    top)
+            array.push(fvgBots,    bot)
+            array.push(fvgIsBulls, isBull)
 
 
 // ─────────────────────────────────────────────────────────────────────────────
