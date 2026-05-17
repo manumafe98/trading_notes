@@ -150,6 +150,13 @@ var array<bool>  fvgIsBulls    = array.new<bool>()
 var array<line>  fvgExtLines   = array.new<line>()
 var bool         fvgWasActive  = false
 
+// --- Pending FVG (drawn on bar open, confirmed/deleted on bar close) ---
+var box   pendingBox   = na
+var label pendingLabel = na
+var line  pendingExt   = na
+var float pendingTop   = na
+var float pendingBot   = na
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  RESET  ─  new trading day
@@ -166,6 +173,9 @@ if nyD != nyD[1]
     lbH             := na
     lbL             := na
     zFill           := na
+    pendingBox      := na
+    pendingLabel    := na
+    pendingExt      := na
 
     if array.size(fvgBoxes) > 0
         for i = 0 to array.size(fvgBoxes) - 1
@@ -251,6 +261,46 @@ if drawn and not stopped and barstate.isconfirmed
 
 
 // ═════════════════════════════════════════════════════════════════════════════
+//  FVG PENDING — Draw on bar open, confirm/adjust/delete on bar close
+// ═════════════════════════════════════════════════════════════════════════════
+if barstate.isnew and bar_index >= 2
+    if inFVGWindow and not stopped[1]
+        isBullOpen = high[2] < low
+        isBearOpen = low[2] > high
+
+        if isBullOpen or isBearOpen
+            pendingTop := isBullOpen ? low : low[2]
+            pendingBot := isBullOpen ? high[2] : high
+
+            pendingBox := box.new(
+                left         = bar_index[2],
+                right        = bar_index[2] + i_fvgBoxLen,
+                top          = pendingTop,
+                bottom       = pendingBot,
+                bgcolor      = isBullOpen ? i_fvgBullCol : i_fvgBearCol,
+                border_color = isBullOpen ? i_fvgBullCol : i_fvgBearCol)
+
+            pendingLabel := label.new(
+                x         = bar_index[2] + math.max(1, i_fvgBoxLen - 3),
+                y         = (pendingTop + pendingBot) / 2,
+                text      = "FVG",
+                color     = color.new(color.white, 100),
+                style     = label.style_label_center,
+                textcolor = isBullOpen ? color.green : color.red,
+                size      = size.small,
+                textalign = text.align_right)
+
+            if i_extEnabled
+                extLevel = isBullOpen ? low[1] : high[1]
+                if extLevel < pendingBot or extLevel > pendingTop
+                    pendingExt := line.new(
+                        bar_index[1], extLevel,
+                        bar_index[1] + i_extLen, extLevel,
+                        color = isBullOpen ? i_fvgBullCol : i_fvgBearCol,
+                        width = i_extWidth,
+                        style = f_extStyle())
+
+// ═════════════════════════════════════════════════════════════════════════════
 //  FVG — Fair Value Gap (multi-track, ORB-break gated)
 // ═════════════════════════════════════════════════════════════════════════════
 if bar_index >= 2 and barstate.isconfirmed
@@ -298,8 +348,67 @@ if bar_index >= 2 and barstate.isconfirmed
                 array.remove(fvgExtLines,i)
             i -= 1
 
-    // ── Detection: find new FVGs — gated by session AND ORB not broken ────
-    if inFVGWindow and not stopped[1]
+    // ── Resolve pending FVG drawn on bar open ────────────────────────────
+    if not na(pendingBox)
+        isBullClose = high[2] < low
+        isBearClose = low[2] > high
+
+        if isBullClose or isBearClose
+            finalTop = isBullClose ? low : low[2]
+            finalBot = isBullClose ? high[2] : high
+
+            box.set_top(pendingBox, finalTop)
+            box.set_bottom(pendingBox, finalBot)
+            box.set_bgcolor(pendingBox, isBullClose ? i_fvgBullCol : i_fvgBearCol)
+            box.set_border_color(pendingBox, isBullClose ? i_fvgBullCol : i_fvgBearCol)
+            label.set_y(pendingLabel, (finalTop + finalBot) / 2)
+            label.set_textcolor(pendingLabel, isBullClose ? color.green : color.red)
+
+            if not na(pendingExt)
+                line.delete(pendingExt)
+            line newExtLine = na
+            if i_extEnabled
+                extLevel = isBullClose ? low[1] : high[1]
+                if extLevel < finalBot or extLevel > finalTop
+                    newExtLine := line.new(
+                        bar_index[1], extLevel,
+                        bar_index[1] + i_extLen, extLevel,
+                        color = isBullClose ? i_fvgBullCol : i_fvgBearCol,
+                        width = i_extWidth,
+                        style = f_extStyle())
+
+            if array.size(fvgBoxes) >= i_maxFvgs
+                box.delete(array.get(fvgBoxes, 0))
+                label.delete(array.get(fvgLabels, 0))
+                if not na(array.get(fvgExtLines, 0))
+                    line.delete(array.get(fvgExtLines, 0))
+                array.remove(fvgBoxes,    0)
+                array.remove(fvgLabels,   0)
+                array.remove(fvgTops,     0)
+                array.remove(fvgBots,     0)
+                array.remove(fvgIsBulls,  0)
+                array.remove(fvgExtLines, 0)
+
+            array.push(fvgBoxes,    pendingBox)
+            array.push(fvgLabels,   pendingLabel)
+            array.push(fvgTops,     finalTop)
+            array.push(fvgBots,     finalBot)
+            array.push(fvgIsBulls,  isBullClose)
+            array.push(fvgExtLines, newExtLine)
+        else
+            box.delete(pendingBox)
+            label.delete(pendingLabel)
+            if not na(pendingExt)
+                line.delete(pendingExt)
+
+        pendingBox   := na
+        pendingLabel := na
+        pendingExt   := na
+        pendingTop   := na
+        pendingBot   := na
+
+    // ── Detection: find new FVGs (historical bars or when no pending FVG) ─
+    else if inFVGWindow and not stopped[1]
 
         isBull = high[2] < low
         isBear = low[2] > high
