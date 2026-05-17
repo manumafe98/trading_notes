@@ -11,6 +11,7 @@ var string G3 = "🏷  Labels"
 var string G4 = "🟦  Zone"
 var string G5 = "📊  FVG"
 var string G6 = "📊  FVG Ext"
+var string G7 = "📋  Status Table"
 
 // ── ORB period ────────────────────────────────────────────────────────────────
 i_orbPeriod = input.string(
@@ -71,6 +72,9 @@ i_extWidth     = input.int   (1,      "Line Width",
      minval=1, maxval=4,                                              group=G6)
 i_extStyle     = input.string("Solid", "Line Style",
      options = ["Solid","Dashed","Dotted"],                           group=G6)
+
+// ── Status Table ──────────────────────────────────────────────────────────────
+i_showST    = input.bool  (false, "Show Status Table",                group=G7)
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -156,6 +160,9 @@ var label pendingLabel = na
 var line  pendingExt   = na
 var float pendingTop   = na
 var float pendingBot   = na
+
+// --- Status Table ---
+var table statusTbl = table.new(position.bottom_left, 2, 6)
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -472,6 +479,46 @@ if bar_index >= 2 and barstate.isconfirmed
             array.push(fvgBots,     bot)
             array.push(fvgIsBulls,  isBull)
             array.push(fvgExtLines, newExtLine)
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  STATUS TABLE  —  hidden by default, data accessible via MCP
+// ═════════════════════════════════════════════════════════════════════════════
+if barstate.islast
+    color stTextCol = i_showST ? color.white : color.new(color.white, 100)
+    table.set_bgcolor(statusTbl, i_showST ? color.new(color.black, 80) : color.new(color.black, 100))
+    table.set_border_width(statusTbl, i_showST ? 1 : 0)
+    table.set_frame_width(statusTbl, i_showST ? 1 : 0)
+
+    int row = 0
+    table.cell(statusTbl, 0, row, "Level", text_color=stTextCol, text_size=size.tiny)
+    table.cell(statusTbl, 1, row, "Price", text_color=stTextCol, text_size=size.tiny)
+    row += 1
+
+    int sz = array.size(fvgBoxes)
+    if sz > 0
+        int   last    = sz - 1
+        float top     = array.get(fvgTops,    last)
+        float bot     = array.get(fvgBots,    last)
+        line  extLine = array.get(fvgExtLines, last)
+
+        table.cell(statusTbl, 0, row, "FVG Top", text_color=stTextCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, str.tostring(top, format.mintick), text_color=stTextCol, text_size=size.tiny)
+        row += 1
+
+        table.cell(statusTbl, 0, row, "FVG Bot", text_color=stTextCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, str.tostring(bot, format.mintick), text_color=stTextCol, text_size=size.tiny)
+        row += 1
+
+        if not na(extLine)
+            float extPrice = line.get_y1(extLine)
+            table.cell(statusTbl, 0, row, "FVG Ext", text_color=stTextCol, text_size=size.tiny)
+            table.cell(statusTbl, 1, row, str.tostring(extPrice, format.mintick), text_color=stTextCol, text_size=size.tiny)
+            row += 1
+
+    for i = row to 5
+        table.cell(statusTbl, 0, i, "", text_color=stTextCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, i, "", text_color=stTextCol, text_size=size.tiny)
 
 
 // ─────────────────────────────────────────────────────────────────────────────
