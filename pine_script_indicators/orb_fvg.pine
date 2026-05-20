@@ -500,20 +500,20 @@ if barstate.islast
         int   last    = sz - 1
         float top     = array.get(fvgTops,    last)
         float bot     = array.get(fvgBots,    last)
+        bool  isBull  = array.get(fvgIsBulls, last)
         line  extLine = array.get(fvgExtLines, last)
 
-        table.cell(statusTbl, 0, row, "FVG Top", text_color=stTextCol, text_size=size.tiny)
-        table.cell(statusTbl, 1, row, str.tostring(top, format.mintick), text_color=stTextCol, text_size=size.tiny)
-        row += 1
+        float coverPrice = isBull ? bot - 0.25 : top + 0.25
 
-        table.cell(statusTbl, 0, row, "FVG Bot", text_color=stTextCol, text_size=size.tiny)
-        table.cell(statusTbl, 1, row, str.tostring(bot, format.mintick), text_color=stTextCol, text_size=size.tiny)
+        table.cell(statusTbl, 0, row, "FVG Cover", text_color=stTextCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, str.tostring(coverPrice, format.mintick), text_color=stTextCol, text_size=size.tiny)
         row += 1
 
         if not na(extLine)
-            float extPrice = line.get_y1(extLine)
+            float extPrice    = line.get_y1(extLine)
+            float extAdjusted = isBull ? extPrice - 0.25 : extPrice + 0.25
             table.cell(statusTbl, 0, row, "FVG Ext", text_color=stTextCol, text_size=size.tiny)
-            table.cell(statusTbl, 1, row, str.tostring(extPrice, format.mintick), text_color=stTextCol, text_size=size.tiny)
+            table.cell(statusTbl, 1, row, str.tostring(extAdjusted, format.mintick), text_color=stTextCol, text_size=size.tiny)
             row += 1
 
     for i = row to 5
