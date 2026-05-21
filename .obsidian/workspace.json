@@ -171,6 +171,8 @@
   },
   "active": "71905b7ce292c5fb",
   "lastOpenFiles": [
+    "Skills/orb_strategy/SKILL.md",
+    "Skills/orb_strategy",
     "Skills/orb-backtest-journal/SKILL.md",
     "Skills/orb-backtest-journal",
     "Skills/forex_factory_day_news/__pycache__/run.cpython-311.pyc",
@@ -182,7 +184,6 @@
     "pine_script_indicators/trading_session.pine",
     "pine_script_indicators/orb_fvg.pine",
     "pine_script_indicators/fvg_last_only.pine",
-    "Skills/forex_factory_high_impact_fetch/__pycache__/run.cpython-311.pyc",
     "Skills/sync-skills/SKILL.md",
     "Skills/key_levels_in_range/SKILL.md",
     "Skills/forex_factory_bank_holiday_fetch/SKILL.md",
@@ -215,7 +216,6 @@
     "Análisis técnico/Estrategias/TradingLab/Green.md",
     "Estilos de Trading/Scalping.md",
     "Estilos de Trading/Swing Trading.md",
-    "Sesiones de Mercado/Rollover.md",
     "imagenes/spread_post_rollover.png"
   ]
 }
