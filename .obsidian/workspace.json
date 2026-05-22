@@ -171,6 +171,8 @@
   },
   "active": "71905b7ce292c5fb",
   "lastOpenFiles": [
+    "Skills/orb-strategy/SKILL.md",
+    "Skills/orb-strategy",
     "Skills/orb-backtest-record/SKILL.md",
     "Skills/orb-backtest-record",
     "Skills/fetch-dates/run.py",
@@ -185,7 +187,6 @@
     "Skills/forex_factory_day_news/requirements.txt",
     "Skills/forex_factory_day_news/SKILL.md",
     "Skills/forex_factory_day_news/run.py",
-    "Skills/forex_factory_day_news",
     "Skills/sync-skills/SKILL.md",
     "Skills/key_levels_in_range/SKILL.md",
     "Skills/forex_factory_bank_holiday_fetch/SKILL.md",
@@ -215,7 +216,6 @@
     "Análisis técnico/Estrategias/TradingLab/White.md",
     "Activos Operables/Índices.md",
     "pine_script_indicators/liquidity_levels_indicator_plan.md",
-    "Análisis técnico/Estrategias/TradingLab/Green.md",
     "imagenes/spread_post_rollover.png"
   ]
 }

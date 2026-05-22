@@ -2,28 +2,30 @@
 name: orb-backtest-record
 description: >
   Creates a new row in one of the three "Backtesting MNQ ORB" strategy datasources
-  (Candle, FVG, or Combined). Receives all column values as parameters and writes
-  to the datasource specified by data_source_id. No schema alteration needed —
-  all select/multi_select options already exist.
+  (Candle, FVG, or Combined). Receives all column values as parameters plus an
+  orb_type string that is internally mapped to the correct datasource UUID.
+  No schema alteration needed — all select/multi_select options already exist.
 ---
 
 # ORB Backtest Record
 
 Adds a row to one of the three **Backtesting MNQ ORB** strategy datasources — Candle, FVG, or Combined — using all column data provided as parameters.
 
-## Datasource IDs
+## Orb Type → Datasource Mapping
 
-| Strategy | datasource ID |
-|----------|---------------|
-| Candle | `35e5f93d-99be-80f3-a705-000bf7e26656` |
-| FVG | `35e5f93d-99be-80de-815f-000b2401174f` |
-| Combined | `35e5f93d-99be-80fa-a16c-000bd0420563` |
+The `orb_type` parameter is internally mapped to the correct datasource UUID:
+
+| `orb_type` | Strategy | Datasource UUID |
+|------------|----------|-----------------|
+| `"Candle"` | Candle | `35e5f93d-99be-80f3-a705-000bf7e26656` |
+| `"FVG"` | FVG | `35e5f93d-99be-80de-815f-000b2401174f` |
+| `"Combined"` | Combined | `35e5f93d-99be-80fa-a16c-000bd0420563` |
 
 ## Parameters
 
 | Parameter | Type | Required | Description | Valid Values |
 |-----------|------|----------|-------------|--------------|
-| `data_source_id` | string | yes | Target datasource UUID | One of the three IDs above |
+| `orb_type` | string | yes | Strategy variant, internally mapped to the correct datasource | `"Candle"`, `"FVG"`, `"Combined"` |
 | `name` | string | yes | Page title | e.g. `"ORB Candle 06/04/2026"` |
 | `date` | string | yes | Trade date in `dd/mm/yyyy` | e.g. `"06/04/2026"` |
 | `day` | string | yes | Day of week | `"Monday"`, `"Tuesday"`, `"Wednesday"`, `"Thursday"`, `"Friday"` |
@@ -53,7 +55,17 @@ SAT LDL, SAT LDH, SAT ASL, SAT ASH
 
 ## Instructions
 
-### Step 1 — Build the properties object
+### Step 1 — Map orb_type to datasource ID
+
+Map the `orb_type` string to its datasource UUID using the table above:
+
+| `orb_type` | → `data_source_id` |
+|------------|---------------------|
+| `"Candle"` | `35e5f93d-99be-80f3-a705-000bf7e26656` |
+| `"FVG"` | `35e5f93d-99be-80de-815f-000b2401174f` |
+| `"Combined"` | `35e5f93d-99be-80fa-a16c-000bd0420563` |
+
+### Step 2 — Build the properties object
 
 Map each parameter to its Notion column name and format according to type:
 
@@ -80,11 +92,11 @@ Map each parameter to its Notion column name and format according to type:
 - `multi_select` columns → **JSON string** with escaped quotes: `"[\"PDH\",\"ASL\",\"PWH\"]"`
 - `title`, `text`, `url` → plain string
 
-### Step 2 — Create the page
+### Step 3 — Create the page
 
 ```
 notion_notion-create-pages
-  parent: { data_source_id: "<data_source_id>" }
+  parent: { data_source_id: "<mapped data_source_id from Step 1>" }
   pages:
     - properties:
         Name:                "ORB Candle 06/04/2026"
@@ -102,7 +114,7 @@ notion_notion-create-pages
         Link:                "https://www.tradingview.com/x/test123"
 ```
 
-### Step 3 — Report
+### Step 4 — Report
 
 Display a summary table to the user:
 
@@ -129,6 +141,8 @@ Display a summary table to the user:
 ## Full example — actual tool call trace
 
 For a Candle strategy trade on Monday April 6th 2026, Long, Win:
+
+**Step 1:** `orb_type = "Candle"` → `data_source_id = "35e5f93d-99be-80f3-a705-000bf7e26656"`
 
 ```
 notion_notion-create-pages
@@ -162,7 +176,7 @@ notion_notion-create-pages
 ## Guidelines
 
 - No schema alteration needed — all select/multi_select options are already present across all three datasources
-- The `data_source_id` parameter determines which datasource receives the row
+- The `orb_type` parameter is mapped internally to the correct datasource UUID (Step 1) — callers never need to know the UUIDs
 - If `liquidity_points` is empty, pass an empty JSON array string: `"[]"`
 - Number values (Duration_min, ORB_Range_pts, P&L, SL_Distance_pts) must be numbers, not strings — passing `"15.5"` instead of `15.5` will cause a validation error
 - Multi_select values must use the exact option names listed in "Liquidity Points — valid options" above
