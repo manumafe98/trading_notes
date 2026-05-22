@@ -370,9 +370,13 @@ if bar_index >= 2 and barstate.isconfirmed
             bot  = array.get(fvgBots,    i)
             bull = array.get(fvgIsBulls, i)
 
+            fullTraversal =
+                 (close <= bot and high >= top) or
+                 (close >= top  and low  <= bot)
+
             mitigated =
-                 (bull and low < bot) or
-                 (not bull and high > top)
+                 (bull and (close <= bot or fullTraversal)) or
+                 (not bull and (close >= top or fullTraversal))
 
             if mitigated
                 box.delete(array.get(fvgBoxes, i))
