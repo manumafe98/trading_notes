@@ -130,7 +130,12 @@ tradingview-mcp_draw_position
   entry_price: <Candle Entry>
   stop_price: <SL from Step 4>
   target_price: <TP from Step 4>
+  auto_zoom: true
+  center_price: <ORB High if LONG, ORB Low if SHORT>
 ```
+
+- For **LONG**, `center_price` = `ORB High` (the breakout level price crossed above).
+- For **SHORT**, `center_price` = `ORB Low` (the breakout level price crossed below).
 
 After drawing, calculate the stop-loss distance in points:
 
@@ -139,7 +144,17 @@ After drawing, calculate the stop-loss distance in points:
 
 Store this value for the recording step.
 
-### Step 8 — Run key-levels-in-range
+### Step 8 — Capture the TradingView screenshot link
+
+Call `get_screenshot_link` to obtain a shareable TradingView chart URL:
+
+```
+tradingview-mcp_get_screenshot_link
+```
+
+Store the returned URL as `link` for use in the recording step.
+
+### Step 9 — Run key-levels-in-range
 
 Invoke the `key-levels-in-range` skill with:
 
@@ -151,7 +166,7 @@ Invoke the `key-levels-in-range` skill with:
 
 Store the returned array as `liquidity_points`. Display the levels to the user. If the array is empty `[]`, use `"N/A"` as the value for `liquidity_points`.
 
-### Step 9 — Step forward until SL or TP is touched
+### Step 10 — Step forward until SL or TP is touched
 
 Loop:
 
@@ -169,7 +184,7 @@ Loop:
 
 Repeat until one of these conditions is met (no time cutoff).
 
-### Step 10 — Calculate derived values for recording
+### Step 11 — Calculate derived values for recording
 
 Compute all values needed by `orb-backtest-record`:
 
@@ -182,11 +197,11 @@ Compute all values needed by `orb-backtest-record`:
 | `direction` | `"Long"` if ORB Operation = `LONG`, `"Short"` if `SHORT` |
 | `pnl` | `2` if TP hit, `-1` if SL hit |
 | `result` | `"Win"` if TP hit, `"Loss"` if SL hit |
-| `link` | `"https://www.tradingview.com/x/test123"` (hardcoded placeholder) |
+| `link` | The URL from `get_screenshot_link` (Step 8) |
 
 > **duration_min example:** entry_time = `10:36`, result_time = `10:45` → duration_min = `9`
 
-### Step 11 — Invoke orb-backtest-record
+### Step 12 — Invoke orb-backtest-record
 
 Invoke the `orb-backtest-record` skill with all collected and derived data:
 
@@ -205,11 +220,11 @@ orb-backtest-record(
   pnl:               <2 or -1>,
   result:            <"Win" or "Loss">,
   sl_distance_pts:   <from Step 7>,
-  link:              <hardcoded>
+  link:              <from get_screenshot_link>
 )
 ```
 
-### Step 12 — Report result
+### Step 13 — Report result
 
 State the outcome:
 
@@ -257,13 +272,15 @@ State the outcome:
 
 **Step 6:** `09:36 + 1h 1m = 10:37` (replay entry). `09:36 + 1h = 10:36` (entry time). → `replay_start({ date: "2026-05-19", time: "10:37" })`
 
-**Step 7:** `draw_position({ direction: "long", entry: 29047.75, stop: 28986.50, target: 29170.25 })` → `sl_distance_pts = 29047.75 - 28986.50 = 61.25`
+**Step 7:** `draw_position({ direction: "long", entry: 29047.75, stop: 28986.50, target: 29170.25, auto_zoom: true, center_price: 29055.00 })` → `sl_distance_pts = 29047.75 - 28986.50 = 61.25`
 
-**Step 8:** `key-levels-in-range("Tuesday", 29047.75, 29170.25)` → `["LDH"]` → stored as `liquidity_points`
+**Step 8:** `get_screenshot_link()` → `"https://www.tradingview.com/x/abc123"`
 
-**Step 9:** Step. At 10:40 bar, low = `28980.50` ≤ SL `28986.50` → **SL HIT**. result_time = `10:40`.
+**Step 9:** `key-levels-in-range("Tuesday", 29047.75, 29170.25)` → `["LDH"]` → stored as `liquidity_points`
 
-**Step 10:**
+**Step 10:** Step. At 10:40 bar, low = `28980.50` ≤ SL `28986.50` → **SL HIT**. result_time = `10:40`.
+
+**Step 11:**
 - `name` = `"ORB Candle 19/05/2026"`
 - `entry_time` = `"10:36"`
 - `orb_range_pts` = `29055.00 - 29010.25 = 44.75`
@@ -271,11 +288,11 @@ State the outcome:
 - `direction` = `"Long"`
 - `pnl` = `-1`
 - `result` = `"Loss"`
-- `link` = `"https://www.tradingview.com/x/test123"`
+- `link` = from `get_screenshot_link`
 
-**Step 11:** Invoke `orb-backtest-record` with all 14 parameters → row created in Candle datasource.
+**Step 12:** Invoke `orb-backtest-record` with all 14 parameters → row created in Candle datasource.
 
-**Step 12:**
+**Step 13:**
 
 ```
 ## ORB Strategy Result — 19/05/2026
@@ -331,6 +348,5 @@ State the outcome:
 - When SL and TP are both null/`"-"`, report both missing columns in the skip message.
 - All times are in the chart's configured timezone (interpreted by TradingView).
 - After `replay_start` to replay entry time, the ORB indicator resets and the table shows `OPEN`. Always use the trade parameters captured during Step 2–4 — never re-fetch the table at re-entry.
-- **Step 11** invokes `orb-backtest-record` to persist the trade to Notion. If the record skill is unavailable, display a warning but continue with the report.
+- **Step 12** invokes `orb-backtest-record` to persist the trade to Notion. If the record skill is unavailable, display a warning but continue with the report.
 - `sl_distance_pts`, `orb_range_pts`, and `duration_min` are all positive numbers.
-- `link` is currently a hardcoded placeholder — a proper TradingView screenshot URL integration is planned.
