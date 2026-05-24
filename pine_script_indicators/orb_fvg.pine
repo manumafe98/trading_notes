@@ -167,6 +167,11 @@ var float candleEntry = na
 var int   orbBreakDir = 0        // 0=unbroken, 1=broke high, -1=broke low
 var int   brokeTime    = na
 
+// --- FVG snapshot (captured at ORB break, persists through mitigation) ---
+var float snFvgCover  = na
+var float snFvgExt    = na
+var bool  snFvgHasExt = false
+
 // --- Status Table ---
 var table statusTbl = table.new(position.bottom_left, 2, 13)
 
@@ -201,6 +206,10 @@ if nyD != nyD[1]
     candleEntry     := na
     orbBreakDir     := 0
     brokeTime       := na
+
+    snFvgCover      := na
+    snFvgExt        := na
+    snFvgHasExt     := false
 
     pendingBox      := na
     pendingLabel    := na
@@ -277,6 +286,26 @@ if drawn and not stopped and barstate.isconfirmed
     if close > orbH or close < orbL
         stopped := true
         brokeTime := time
+
+        int fvgCount = array.size(fvgBoxes)
+        if fvgCount > 0
+            int   lastIdx   = fvgCount - 1
+            float lastTop   = array.get(fvgTops,    lastIdx)
+            float lastBot   = array.get(fvgBots,    lastIdx)
+            bool  lastBull  = array.get(fvgIsBulls, lastIdx)
+            line  lastExt   = array.get(fvgExtLines, lastIdx)
+            snFvgCover := lastBull ? lastBot - 0.25 : lastTop + 0.25
+            if not na(lastExt)
+                float extPrice = line.get_y1(lastExt)
+                snFvgExt    := lastBull ? extPrice - 0.25 : extPrice + 0.25
+                snFvgHasExt := true
+            else
+                snFvgExt    := na
+                snFvgHasExt := false
+        else
+            snFvgCover  := na
+            snFvgExt    := na
+            snFvgHasExt := false
 
         if close > orbH
             candleCover := low - 0.25
@@ -370,13 +399,7 @@ if bar_index >= 2 and barstate.isconfirmed
             bot  = array.get(fvgBots,    i)
             bull = array.get(fvgIsBulls, i)
 
-            fullTraversal =
-                 (close <= bot and high >= top) or
-                 (close >= top  and low  <= bot)
-
-            mitigated =
-                 (bull and (close <= bot or fullTraversal)) or
-                 (not bull and (close >= top or fullTraversal))
+            mitigated = (bull and close < bot) or (not bull and close > top)
 
             if mitigated
                 box.delete(array.get(fvgBoxes, i))
@@ -569,11 +592,14 @@ if barstate.isconfirmed
     row += 1
 
     // --- FVG Cover / Ext / TP ---
-    int   sz          = array.size(fvgBoxes)
     float fvgCoverVal = na
     float fvgExtVal   = na
-    if sz > 0
-        int   last    = sz - 1
+
+    if stopped
+        fvgCoverVal := snFvgCover
+        fvgExtVal   := snFvgHasExt ? snFvgExt : na
+    else if array.size(fvgBoxes) > 0
+        int   last    = array.size(fvgBoxes) - 1
         float top     = array.get(fvgTops,    last)
         float bot     = array.get(fvgBots,    last)
         bool  isBull  = array.get(fvgIsBulls, last)
@@ -581,16 +607,19 @@ if barstate.isconfirmed
 
         fvgCoverVal := isBull ? bot - 0.25 : top + 0.25
 
+        if not na(extLine)
+            float extPrice = line.get_y1(extLine)
+            fvgExtVal := isBull ? extPrice - 0.25 : extPrice + 0.25
+
+    if not na(fvgCoverVal)
         table.cell(statusTbl, 0, row, "FVG Cover", text_color=stTextCol, text_size=size.tiny)
         table.cell(statusTbl, 1, row, str.tostring(fvgCoverVal, format.mintick), text_color=stTextCol, text_size=size.tiny)
         row += 1
 
-        if not na(extLine)
-            float extPrice = line.get_y1(extLine)
-            fvgExtVal := isBull ? extPrice - 0.25 : extPrice + 0.25
-            table.cell(statusTbl, 0, row, "FVG Ext", text_color=stTextCol, text_size=size.tiny)
-            table.cell(statusTbl, 1, row, str.tostring(fvgExtVal, format.mintick), text_color=stTextCol, text_size=size.tiny)
-            row += 1
+    if not na(fvgExtVal)
+        table.cell(statusTbl, 0, row, "FVG Ext", text_color=stTextCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, str.tostring(fvgExtVal, format.mintick), text_color=stTextCol, text_size=size.tiny)
+        row += 1
 
     // --- Candle TP ---
     float candleTP = na
