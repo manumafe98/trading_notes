@@ -54,22 +54,22 @@ def get_month_dates_with_dst(month_num: int, year: int):
     if month_num == 3:
         transition = find_nth_sunday(year, 3, 2)
         periods = [
-            ("11:35", "14:00", 1, transition - 1),
-            ("10:35", "13:00", transition, num_days),
+            ("11:35", "14:00", 2, 1, transition - 1),
+            ("10:35", "13:00", 1, transition, num_days),
         ]
     elif month_num == 11:
         transition = find_nth_sunday(year, 11, 1)
         periods = [
-            ("10:35", "13:00", 1, transition - 1),
-            ("11:35", "14:00", transition, num_days),
+            ("10:35", "13:00", 1, 1, transition - 1),
+            ("11:35", "14:00", 2, transition, num_days),
         ]
     elif 4 <= month_num <= 10:
-        periods = [("10:35", "13:00", 1, num_days)]
+        periods = [("10:35", "13:00", 1, 1, num_days)]
     else:
-        periods = [("11:35", "14:00", 1, num_days)]
+        periods = [("11:35", "14:00", 2, 1, num_days)]
 
     result = []
-    for time_val, session_val, start_day, end_day in periods:
+    for time_val, session_val, hour_diff, start_day, end_day in periods:
         dates = [
             {"day": wd["day_name"], "date": wd["date_str"]}
             for wd in all_weekdays
@@ -78,6 +78,7 @@ def get_month_dates_with_dst(month_num: int, year: int):
         if dates:
             result.append({
                 "time": time_val,
+                "hour_diff": hour_diff,
                 "session_end": session_val,
                 "month": month_name,
                 "dates": dates,

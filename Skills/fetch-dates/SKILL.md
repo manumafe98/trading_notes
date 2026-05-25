@@ -37,6 +37,7 @@ The script is in the same folder as this SKILL.md. Use the full path to `run.py`
 [
   {
     "time": "10:35",
+    "hour_diff": 1,
     "session_end": "13:00",
     "month": "May",
     "dates": [
@@ -52,6 +53,7 @@ The script is in the same folder as this SKILL.md. Use the full path to `run.py`
 
 Each object:
 - `time` — NY session start in Argentina local time (`HH:MM`, 24h format)
+- `hour_diff` — number of hours to add when converting NY (ET) indicator times to Argentina local time (`1` during EDT, `2` during EST)
 - `session_end` — NY session end in Argentina local time (`HH:MM`, 24h format)
 - `month` — full month name (same as input)
 - `dates` — array of weekday objects (`day`: full weekday name, `date`: `dd/mm/yyyy`)
@@ -69,6 +71,7 @@ For March and November, the output may contain **two objects** — one for each 
 [
   {
     "time": "11:35",
+    "hour_diff": 2,
     "session_end": "14:00",
     "month": "March",
     "dates": [
@@ -81,6 +84,7 @@ For March and November, the output may contain **two objects** — one for each 
   },
   {
     "time": "10:35",
+    "hour_diff": 1,
     "session_end": "13:00",
     "month": "March",
     "dates": [
@@ -93,14 +97,14 @@ For March and November, the output may contain **two objects** — one for each 
 
 ### DST Session Times
 
-| Months | US Timezone | `time` | `session_end` |
-|--------|-------------|--------|---------------|
-| April – October | EDT (DST) | `"10:35"` | `"13:00"` |
-| December – February | EST (Standard) | `"11:35"` | `"14:00"` |
-| March (before 2nd Sunday) | EST (Standard) | `"11:35"` | `"14:00"` |
-| March (on/after 2nd Sunday) | EDT (DST) | `"10:35"` | `"13:00"` |
-| November (before 1st Sunday) | EDT (DST) | `"10:35"` | `"13:00"` |
-| November (on/after 1st Sunday) | EST (Standard) | `"11:35"` | `"14:00"` |
+| Months | US Timezone | `time` | `session_end` | `hour_diff` |
+|--------|-------------|--------|---------------|:-----------:|
+| April – October | EDT (DST) | `"10:35"` | `"13:00"` | `1` |
+| December – February | EST (Standard) | `"11:35"` | `"14:00"` | `2` |
+| March (before 2nd Sunday) | EST (Standard) | `"11:35"` | `"14:00"` | `2` |
+| March (on/after 2nd Sunday) | EDT (DST) | `"10:35"` | `"13:00"` | `1` |
+| November (before 1st Sunday) | EDT (DST) | `"10:35"` | `"13:00"` | `1` |
+| November (on/after 1st Sunday) | EST (Standard) | `"11:35"` | `"14:00"` | `2` |
 
 ### Presenting Results to the User
 
