@@ -2,24 +2,24 @@
 name: key-levels-in-range
 description: >
   Identifies which price levels from ICT Killzones and Key Levels indicators
-  fall within a trade's entry-to-take-profit range. Use this skill when the
-  user provides an entry price and take profit price and wants to know which
-  key levels (PDH, PDL, PWH, PWL, PMH, PML, ASH, ASL, LDH, LDL, etc.)
-  sit between entry and target. Also use when the user asks about levels in
-  their trade range, obstacles between entry and target, or confluences in a
+  fall within a given price range between a starting price and a take-profit
+  price. Use this skill when the user provides a from price and a take profit
+  price and wants to know which key levels (PDH, PDL, PWH, PWL, PMH, PML, ASH,
+  ASL, LDH, LDL, etc.) sit between them. Also use when the user asks about
+  levels in a price range, obstacles between two prices, or confluences in a
   price zone.
 ---
 
 # Key Levels In Range
 
-Fetches price levels from ICT Killzones and Key Levels indicators on the active TradingView chart, filters them to only those within a trade's entry → take-profit range, and returns the matching level names.
+Fetches price levels from ICT Killzones and Key Levels indicators on the active TradingView chart, filters them to only those within a given from-price → take-profit range, and returns the matching level names.
 
 ## Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `current_day_of_the_week` | string | yes | Full day name: `"Sunday"`, `"Monday"`, `"Tuesday"`, `"Wednesday"`, `"Thursday"`, `"Friday"`, `"Saturday"` |
-| `entry_price` | number | yes | Entry price of the trade |
+| `from_price` | number | yes | Starting price of the range (e.g., Candle Entry, ORB High, ORB Low) |
 | `take_profit_price` | number | yes | Take profit price of the trade |
 
 ## Instructions
@@ -47,16 +47,12 @@ For each table response, iterate over the `rows` array. Skip the first row (head
 
 Build a combined map of `{ label: price }` from both tables.
 
-### Step 3 — Determine range and direction
+### Step 3 — Determine the price range
 
-Compare `entry_price` and `take_profit_price`:
-
-- If `entry_price < take_profit_price` → **Long position**
-  - `range_low = entry_price`
-  - `range_high = take_profit_price`
-- If `entry_price > take_profit_price` → **Short position**
-  - `range_low = take_profit_price`
-  - `range_high = entry_price`
+```
+range_low  = min(from_price, take_profit_price)
+range_high = max(from_price, take_profit_price)
+```
 
 ### Step 4 — Filter levels within range
 
@@ -66,7 +62,7 @@ From the combined label → price map, keep only entries where:
 price >= range_low AND price <= range_high
 ```
 
-The `>=` and `<=` (inclusive) ensure that levels with an exact match to entry or take-profit are included.
+The `>=` and `<=` (inclusive) ensure that levels with an exact match to range bounds are included.
 
 ### Step 5 — Clean up killzone day prefixes
 
@@ -100,10 +96,10 @@ Return only the cleaned labels as a JSON array:
 
 **Inputs:**
 - `current_day_of_the_week` = `"Wednesday"`
-- `entry_price` = `29800`
+- `from_price` = `29800`
 - `take_profit_price` = `29400`
 
-**Step 3:** Entry (29800) > TP (29400) → Short. Range = `[29400, 29800]`.
+**Step 3:** `min(29800, 29400) = 29400`, `max(29800, 29400) = 29800` → Range = `[29400, 29800]`.
 
 **Step 4:** Suppose the MCP tools return:
 
