@@ -26,6 +26,7 @@ Each object in `session_periods`:
 | Field | Type | Description |
 |-------|------|-------------|
 | `time` | string | NY session start in `HH:MM` 24h format (e.g., `"10:35"`) |
+| `hour_diff` | number | Hours to add when converting NY (ET) to Argentina local time (`1` in EDT, `2` in EST) |
 | `session_end` | string | NY session end in `HH:MM` 24h format (e.g., `"13:00"`) |
 | `month` | string | Full month name (e.g., `"June"`, `"December"`) |
 | `dates` | array | Array of `{ day, date }` objects for the weekdays in this period |
@@ -43,6 +44,7 @@ Each date object:
 [
   {
     "time": "10:35",
+    "hour_diff": 1,
     "session_end": "13:00",
     "month": "June",
     "dates": [
@@ -76,7 +78,7 @@ All trade flags use `"Yes"` or `"No"`. Empty news arrays are stored as `["N/A"]`
 
 For each object `sp` in the `session_periods` array (max 2):
 
-1. Extract `sp.time`, `sp.session_end`, `sp.month`
+1. Extract `sp.time`, `sp.hour_diff`, `sp.session_end`, `sp.month`
 2. Proceed to the **Inner Loop** over `sp.dates`
 
 ### Inner Loop — Iterate Over Dates
@@ -129,6 +131,7 @@ orb-strategy:
   month:        <sp.month>
   orb_type:     "Candle"
   session_end:  <sp.session_end>
+  hour_diff:    <sp.hour_diff>
 ```
 
 **Determine outcome from the orb-strategy report:**
@@ -154,11 +157,11 @@ From the orb-strategy report table, extract the `Broke Time` value (format `HH:M
 Calculate the downstream `time` parameter:
 
 ```
-entry_time   = Broke Time + 1h
+entry_time   = Broke Time + sp.hour_diff hours
 next_time    = entry_time + 2min
 ```
 
-Example: `Broke Time = "09:36"` → `entry_time = "10:36"` → `next_time = "10:38"`
+Example: `Broke Time = "09:36"`, `sp.hour_diff = 1` → `entry_time = "10:36"` → `next_time = "10:38"`
 
 Store `next_time` for use in Tasks 3 and 4.
 
@@ -176,6 +179,7 @@ orb-strategy:
   month:        <sp.month>
   orb_type:     "FVG"
   session_end:  <sp.session_end>
+  hour_diff:    <sp.hour_diff>
 ```
 
 **Determine outcome:**
@@ -208,6 +212,7 @@ orb-strategy:
   month:        <sp.month>
   orb_type:     "Combined"
   session_end:  <sp.session_end>
+  hour_diff:    <sp.hour_diff>
 ```
 
 If we reach this point, both Candle and FVG executed successfully — the Combined strategy can proceed.
@@ -278,6 +283,7 @@ After each date completes, display a summary table:
 [
   {
     "time": "10:35",
+    "hour_diff": 1,
     "session_end": "13:00",
     "month": "June",
     "dates": [
@@ -296,13 +302,13 @@ After each date completes, display a summary table:
 - `high_impact_labels = ["USD - ISM Manufacturing PMI"]`
 
 **Task 2 — Candle:**
-- `orb-strategy(date="01/06/2026", time="10:35", day="Monday", month="June", orb_type="Candle", session_end="13:00")`
+- `orb-strategy(date="01/06/2026", time="10:35", day="Monday", month="June", orb_type="Candle", session_end="13:00", hour_diff=1)`
 - Report: ORB broke at `09:37`, Candle TP hit → Win. Broke Time = `09:37`.
 - `orb_candle_has_trade = "Yes"`
 - `entry_time = "10:37"`, `next_time = "10:39"`
 
 **Task 3 — FVG:**
-- `orb-strategy(date="01/06/2026", time="10:39", day="Monday", month="June", orb_type="FVG", session_end="13:00")`
+- `orb-strategy(date="01/06/2026", time="10:39", day="Monday", month="June", orb_type="FVG", session_end="13:00", hour_diff=1)`
 - Report: FVG Cover is `"-"` → SKIP.
 - `orb_fvg_has_trade = "No"`, `orb_combined_has_trade = "No"`
 - Jump to Task 5.
@@ -352,6 +358,7 @@ After each date completes, display a summary table:
 ```
 FOR EACH session_period IN session_periods
   time = sp.time
+  hour_diff = sp.hour_diff
   session_end = sp.session_end
   month = sp.month
 
@@ -362,15 +369,15 @@ FOR EACH session_period IN session_periods
     ┌─ Task 1: forex-factory-day-news(date)
     │   → bank_holiday_labels, high_impact_labels
     │
-    ├─ Task 2: orb-strategy(Candle, time)
+    ├─ Task 2: orb-strategy(Candle, time, hour_diff)
     │   ├─ SKIP → candle=No, fvg=No, combined=No → Task 5 ─┐
     │   └─ TRADE → candle=Yes, capture next_time            │
     │       │                                                │
-    │       ├─ Task 3: orb-strategy(FVG, next_time)          │
+    │       ├─ Task 3: orb-strategy(FVG, next_time, hour_diff)
     │       │   ├─ SKIP → fvg=No, combined=No → Task 5 ─────┤
     │       │   └─ TRADE → fvg=Yes                           │
     │       │       │                                        │
-    │       │       └─ Task 4: orb-strategy(Combined, next_time)
+    │       │       └─ Task 4: orb-strategy(Combined, next_time, hour_diff)
     │       │           └─ combined=Yes ──┐                  │
     │       │                             │                  │
     │       └─────────────────────────────┤                  │
@@ -386,5 +393,5 @@ FOR EACH session_period IN session_periods
 - `orb_fvg_has_trade` failure cascades to `orb_combined_has_trade` but does NOT affect `orb_candle_has_trade`
 - `next_time` is derived only from Candle's Broke Time — FVG and Combined reuse the same entry window since the ORB breaks once per session
 - Journal model is ephemeral: cleared after each date to prevent cross-contamination
-- All three `orb-strategy` calls use the same `date`, `day`, `month`, and `session_end` — only `orb_type` and `time` vary
+- All three `orb-strategy` calls use the same `date`, `day`, `month`, `session_end`, and `hour_diff` — only `orb_type` and `time` vary
 - The orchestrator skill has no scripts — it relies entirely on the AI agent following these instructions to invoke other skills
