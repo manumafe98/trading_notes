@@ -177,7 +177,7 @@ notion_notion-create-pages
 
 - No schema alteration needed — all select/multi_select options are already present across all three datasources
 - The `orb_type` parameter is mapped internally to the correct datasource UUID (Step 1) — callers never need to know the UUIDs
-- If `liquidity_points` is empty, pass an empty JSON array string: `"[]"`
+- If `liquidity_points` is empty or `["N/A"]`, pass `"[\"N/A\"]"` as the JSON string value — `"N/A"` is a valid multi_select option in all three datasource schemas
 - Number values (Duration_min, ORB_Range_pts, P&L, SL_Distance_pts) must be numbers, not strings — passing `"15.5"` instead of `15.5` will cause a validation error
 - Multi_select values must use the exact option names listed in "Liquidity Points — valid options" above
 - The `Name` (title) column convention is: `"ORB <Strategy> <date>"` (e.g., `"ORB Candle 06/04/2026"`)
