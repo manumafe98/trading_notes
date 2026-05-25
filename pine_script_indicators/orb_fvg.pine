@@ -172,8 +172,33 @@ var float snFvgCover  = na
 var float snFvgExt    = na
 var bool  snFvgHasExt = false
 
+// --- Persistent TP values (computed at breakout, used by hit detection) ---
+var float candleTP  = na
+var float fvgTP     = na
+var float fvgExtTP  = na
+
+// --- Hit tracking (first-touch per level, per pair) ---
+var bool  candleCoverHit     = false
+var int   candleCoverHitTime = na
+var bool  candleTPHit        = false
+var int   candleTPHitTime    = na
+
+var bool  fvgCoverHit        = false
+var int   fvgCoverHitTime    = na
+var bool  fvgTPHit           = false
+var int   fvgTPHitTime       = na
+
+var bool  fvgExtCoverHit     = false
+var int   fvgExtCoverHitTime = na
+var bool  fvgExtTPHit        = false
+var int   fvgExtTPHitTime    = na
+
+// --- Hit tracking is per-level, independent — no locking, no entry threshold ---
+// Each level records its FIRST touch time after ORB breaks. The AI skill handles
+// entry-time logic (comparing hit times against entry = brokeTime + 1h).
+
 // --- Status Table ---
-var table statusTbl = table.new(position.bottom_left, 2, 13)
+var table statusTbl = table.new(position.bottom_left, 2, 20)
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -228,6 +253,26 @@ if nyD != nyD[1]
     array.clear(fvgIsBulls)
     array.clear(fvgExtLines)
     fvgWasActive := false
+
+    candleTP           := na
+    fvgTP              := na
+    fvgExtTP           := na
+
+    candleCoverHit     := false
+    candleCoverHitTime := na
+    candleTPHit        := false
+    candleTPHitTime    := na
+
+    fvgCoverHit        := false
+    fvgCoverHitTime    := na
+    fvgTPHit           := false
+    fvgTPHitTime       := na
+
+    fvgExtCoverHit     := false
+    fvgExtCoverHitTime := na
+    fvgExtTPHit        := false
+    fvgExtTPHitTime    := na
+
 
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -315,6 +360,23 @@ if drawn and not stopped and barstate.isconfirmed
             candleCover := high + 0.25
             candleEntry := close
             orbBreakDir := -1
+
+        if orbBreakDir == 1
+            candleTP := candleEntry + 2 * (candleEntry - candleCover)
+        else
+            candleTP := candleEntry - 2 * (candleCover - candleEntry)
+
+        if not na(snFvgCover)
+            if orbBreakDir == 1
+                fvgTP := candleEntry + 2 * (candleEntry - snFvgCover)
+            else
+                fvgTP := candleEntry - 2 * (snFvgCover - candleEntry)
+
+        if snFvgHasExt and not na(snFvgExt)
+            if orbBreakDir == 1
+                fvgExtTP := candleEntry + 2 * (candleEntry - snFvgExt)
+            else
+                fvgExtTP := candleEntry - 2 * (snFvgExt - candleEntry)
 
         line.set_extend(lnH, extend.none)
         line.set_extend(lnL, extend.none)
@@ -541,6 +603,55 @@ if bar_index >= 2 and barstate.isconfirmed
 
 
 // ═════════════════════════════════════════════════════════════════════════════
+//  HIT DETECTION  —  first-touch per level, mutual exclusion per pair
+// ═════════════════════════════════════════════════════════════════════════════
+if stopped and barstate.isconfirmed
+
+    float cv      = candleCover
+    float cTP     = candleTP
+    bool  isLong  = orbBreakDir == 1
+    bool  isShort = orbBreakDir == -1
+
+    // ── Candle Cover (first touch) ──
+    if not candleCoverHit
+        if (isLong and low <= cv) or (isShort and high >= cv)
+            candleCoverHit     := true
+            candleCoverHitTime := time
+
+    // ── Candle TP (first touch) ──
+    if not candleTPHit
+        if (isLong and high >= cTP) or (isShort and low <= cTP)
+            candleTPHit        := true
+            candleTPHitTime    := time
+
+    // ── FVG Cover (first touch, only if snapshot exists) ──
+    if not na(snFvgCover) and not fvgCoverHit
+        float fc = snFvgCover
+        if (isLong and low <= fc) or (isShort and high >= fc)
+            fvgCoverHit     := true
+            fvgCoverHitTime := time
+
+    // ── FVG TP (first touch, only if snapshot exists) ──
+    if not na(snFvgCover) and not fvgTPHit
+        if (isLong and high >= fvgTP) or (isShort and low <= fvgTP)
+            fvgTPHit        := true
+            fvgTPHitTime    := time
+
+    // ── FVG Ext Cover (first touch, only if ext snapshot exists) ──
+    if snFvgHasExt and not na(snFvgExt) and not fvgExtCoverHit
+        float fe = snFvgExt
+        if (isLong and low <= fe) or (isShort and high >= fe)
+            fvgExtCoverHit     := true
+            fvgExtCoverHitTime := time
+
+    // ── FVG EXT TP (first touch, only if ext snapshot exists) ──
+    if snFvgHasExt and not na(snFvgExt) and not fvgExtTPHit
+        if (isLong and high >= fvgExtTP) or (isShort and low <= fvgExtTP)
+            fvgExtTPHit        := true
+            fvgExtTPHitTime    := time
+
+
+// ═════════════════════════════════════════════════════════════════════════════
 //  STATUS TABLE  —  hidden by default, data accessible via MCP
 // ═════════════════════════════════════════════════════════════════════════════
 if barstate.isconfirmed
@@ -554,44 +665,53 @@ if barstate.isconfirmed
     table.cell(statusTbl, 1, row, "Data", text_color=stTextCol, text_size=size.tiny)
     row += 1
 
-    // --- ORB Status ---
+    // ——— ORB ——————————————————————————————————————————————————————————————
+
     string orbStatusVal = na(orbH) ? "WAIT" : stopped ? "BROKEN" : "OPEN"
     table.cell(statusTbl, 0, row, "ORB Status", text_color=stTextCol, text_size=size.tiny)
     table.cell(statusTbl, 1, row, orbStatusVal, text_color=stTextCol, text_size=size.tiny)
     row += 1
 
-    // --- ORB Operation ---
     string orbOp = orbBreakDir == 0 ? "-" : orbBreakDir == 1 ? "LONG" : "SHORT"
     table.cell(statusTbl, 0, row, "ORB Operation", text_color=stTextCol, text_size=size.tiny)
     table.cell(statusTbl, 1, row, orbOp, text_color=stTextCol, text_size=size.tiny)
     row += 1
 
-    // --- ORB High Level ---
     table.cell(statusTbl, 0, row, "ORB High", text_color=stTextCol, text_size=size.tiny)
     table.cell(statusTbl, 1, row, na(orbH) ? "-" : str.tostring(orbH, format.mintick), text_color=stTextCol, text_size=size.tiny)
     row += 1
 
-    // --- ORB Low Level ---
     table.cell(statusTbl, 0, row, "ORB Low", text_color=stTextCol, text_size=size.tiny)
     table.cell(statusTbl, 1, row, na(orbL) ? "-" : str.tostring(orbL, format.mintick), text_color=stTextCol, text_size=size.tiny)
     row += 1
 
-    // --- Candle Entry ---
-    table.cell(statusTbl, 0, row, "Candle Entry", text_color=stTextCol, text_size=size.tiny)
-    table.cell(statusTbl, 1, row, na(candleEntry) ? "-" : str.tostring(candleEntry, format.mintick), text_color=stTextCol, text_size=size.tiny)
-    row += 1
-
-    // --- Candle Cover ---
-    table.cell(statusTbl, 0, row, "Candle Cover", text_color=stTextCol, text_size=size.tiny)
-    table.cell(statusTbl, 1, row, na(candleCover) ? "-" : str.tostring(candleCover, format.mintick), text_color=stTextCol, text_size=size.tiny)
-    row += 1
-
-    // --- Broke Time ---
     table.cell(statusTbl, 0, row, "Broke Time", text_color=stTextCol, text_size=size.tiny)
     table.cell(statusTbl, 1, row, na(brokeTime) ? "-" : str.format_time(brokeTime, "HH:mm", NY), text_color=stTextCol, text_size=size.tiny)
     row += 1
 
-    // --- FVG Cover / Ext / TP ---
+    // ——— Candle ————————————————————————————————————————————————————————————
+
+    table.cell(statusTbl, 0, row, "Candle Entry", text_color=stTextCol, text_size=size.tiny)
+    table.cell(statusTbl, 1, row, na(candleEntry) ? "-" : str.tostring(candleEntry, format.mintick), text_color=stTextCol, text_size=size.tiny)
+    row += 1
+
+    table.cell(statusTbl, 0, row, "Candle Cover", text_color=stTextCol, text_size=size.tiny)
+    table.cell(statusTbl, 1, row, na(candleCover) ? "-" : str.tostring(candleCover, format.mintick), text_color=stTextCol, text_size=size.tiny)
+    row += 1
+
+    table.cell(statusTbl, 0, row, "Candle Cover Hit", text_color=stTextCol, text_size=size.tiny)
+    table.cell(statusTbl, 1, row, na(candleCoverHitTime) ? "-" : str.format_time(candleCoverHitTime, "HH:mm", NY), text_color=stTextCol, text_size=size.tiny)
+    row += 1
+
+    table.cell(statusTbl, 0, row, "Candle TP", text_color=stTextCol, text_size=size.tiny)
+    table.cell(statusTbl, 1, row, na(candleTP) ? "-" : str.tostring(candleTP, format.mintick), text_color=stTextCol, text_size=size.tiny)
+    row += 1
+
+    table.cell(statusTbl, 0, row, "Candle TP Hit", text_color=stTextCol, text_size=size.tiny)
+    table.cell(statusTbl, 1, row, na(candleTPHitTime) ? "-" : str.format_time(candleTPHitTime, "HH:mm", NY), text_color=stTextCol, text_size=size.tiny)
+    row += 1
+
+    // Compute FVG display values
     float fvgCoverVal = na
     float fvgExtVal   = na
 
@@ -611,50 +731,47 @@ if barstate.isconfirmed
             float extPrice = line.get_y1(extLine)
             fvgExtVal := isBull ? extPrice - 0.25 : extPrice + 0.25
 
+    // ——— FVG ————————————————————————————————————————————————————————————————
+
     if not na(fvgCoverVal)
         table.cell(statusTbl, 0, row, "FVG Cover", text_color=stTextCol, text_size=size.tiny)
         table.cell(statusTbl, 1, row, str.tostring(fvgCoverVal, format.mintick), text_color=stTextCol, text_size=size.tiny)
         row += 1
 
+        table.cell(statusTbl, 0, row, "FVG Cover Hit", text_color=stTextCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, na(fvgCoverHitTime) ? "-" : str.format_time(fvgCoverHitTime, "HH:mm", NY), text_color=stTextCol, text_size=size.tiny)
+        row += 1
+
+        table.cell(statusTbl, 0, row, "FVG TP", text_color=stTextCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, na(fvgTP) ? "-" : str.tostring(fvgTP, format.mintick), text_color=stTextCol, text_size=size.tiny)
+        row += 1
+
+        table.cell(statusTbl, 0, row, "FVG TP Hit", text_color=stTextCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, na(fvgTPHitTime) ? "-" : str.format_time(fvgTPHitTime, "HH:mm", NY), text_color=stTextCol, text_size=size.tiny)
+        row += 1
+
+    // ——— FVG Ext ————————————————————————————————————————————————————————————
+
     if not na(fvgExtVal)
-        table.cell(statusTbl, 0, row, "FVG Ext", text_color=stTextCol, text_size=size.tiny)
+        table.cell(statusTbl, 0, row, "FVG Ext Cover", text_color=stTextCol, text_size=size.tiny)
         table.cell(statusTbl, 1, row, str.tostring(fvgExtVal, format.mintick), text_color=stTextCol, text_size=size.tiny)
         row += 1
 
-    // --- Candle TP ---
-    float candleTP = na
-    if orbBreakDir == 1
-        candleTP := candleEntry + 2 * (candleEntry - candleCover)
-    else if orbBreakDir == -1
-        candleTP := candleEntry - 2 * (candleCover - candleEntry)
-    table.cell(statusTbl, 0, row, "Candle TP", text_color=stTextCol, text_size=size.tiny)
-    table.cell(statusTbl, 1, row, na(candleTP) ? "-" : str.tostring(candleTP, format.mintick), text_color=stTextCol, text_size=size.tiny)
-    row += 1
+        table.cell(statusTbl, 0, row, "FVG Ext Cover Hit", text_color=stTextCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, na(fvgExtCoverHitTime) ? "-" : str.format_time(fvgExtCoverHitTime, "HH:mm", NY), text_color=stTextCol, text_size=size.tiny)
+        row += 1
 
-    // --- FVG TP ---
-    float fvgTP = na
-    if not na(fvgCoverVal) and orbBreakDir != 0
-        if orbBreakDir == 1
-            fvgTP := candleEntry + 2 * (candleEntry - fvgCoverVal)
-        else
-            fvgTP := candleEntry - 2 * (fvgCoverVal - candleEntry)
-    table.cell(statusTbl, 0, row, "FVG TP", text_color=stTextCol, text_size=size.tiny)
-    table.cell(statusTbl, 1, row, na(fvgTP) ? "-" : str.tostring(fvgTP, format.mintick), text_color=stTextCol, text_size=size.tiny)
-    row += 1
+        table.cell(statusTbl, 0, row, "FVG EXT TP", text_color=stTextCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, na(fvgExtTP) ? "-" : str.tostring(fvgExtTP, format.mintick), text_color=stTextCol, text_size=size.tiny)
+        row += 1
 
-    // --- FVG EXT TP ---
-    float fvgExtTP = na
-    if not na(fvgExtVal) and orbBreakDir != 0
-        if orbBreakDir == 1
-            fvgExtTP := candleEntry + 2 * (candleEntry - fvgExtVal)
-        else
-            fvgExtTP := candleEntry - 2 * (fvgExtVal - candleEntry)
-    table.cell(statusTbl, 0, row, "FVG EXT TP", text_color=stTextCol, text_size=size.tiny)
-    table.cell(statusTbl, 1, row, na(fvgExtTP) ? "-" : str.tostring(fvgExtTP, format.mintick), text_color=stTextCol, text_size=size.tiny)
-    row += 1
+        table.cell(statusTbl, 0, row, "FVG EXT TP Hit", text_color=stTextCol, text_size=size.tiny)
+        table.cell(statusTbl, 1, row, na(fvgExtTPHitTime) ? "-" : str.format_time(fvgExtTPHitTime, "HH:mm", NY), text_color=stTextCol, text_size=size.tiny)
+        row += 1
 
-    if row <= 12
-        for i = row to 12
+    // Fill remaining rows
+    if row <= 19
+        for i = row to 19
             table.cell(statusTbl, 0, i, "", text_color=stTextCol, text_size=size.tiny)
             table.cell(statusTbl, 1, i, "", text_color=stTextCol, text_size=size.tiny)
 
