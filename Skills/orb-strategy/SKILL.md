@@ -25,6 +25,7 @@ Runs a full ORB trade simulation on the TradingView chart via bar replay. The sk
 | `day` | string | yes | Full day name: `"Monday"`, `"Tuesday"`, `"Wednesday"`, `"Thursday"`, `"Friday"` |
 | `month` | string | yes | Full month name: `"January"`–`"December"` (e.g., `"May"`) |
 | `orb_type` | string | yes | Strategy variant: `"Candle"`, `"FVG"`, or `"Combined"` |
+| `hour_diff` | number | yes | Hours to add when converting NY (ET) indicator times to Argentina local time. `1` during EDT (Apr–Oct), `2` during EST (Dec–Feb). Passed from `fetch-dates` output. |
 | `session_end` | string | yes | Session cutoff time in `HH:MM` 24h format (e.g., `"12:00"`). If ORB breaks after this time, the trade is skipped. |
 
 ## SL / TP / Range Mapping
@@ -35,7 +36,7 @@ The `orb_type` parameter determines which table columns are used for stop-loss, 
 |----------|-------|----|----|------------------|
 | `Candle` | Candle Entry | Candle Cover | Candle TP | Entry → Candle TP |
 | `FVG` | Candle Entry | FVG Cover | FVG TP | Entry → FVG TP |
-| `Combined` | Candle Entry | FVG Ext | FVG EXT TP | Entry → FVG EXT TP |
+| `Combined` | Candle Entry | FVG Ext Cover | FVG EXT TP | Entry → FVG EXT TP |
 
 ## Instructions
 
@@ -62,7 +63,7 @@ Parse the table rows. Look at the row labeled `ORB Status`:
 
 From the table, extract the `Broke Time` value (format `HH:MM`).
 
-Calculate the re-entry time: `Broke Time + 1h`. Compare the **re-entry time** against the `session_end` parameter:
+Calculate the re-entry time: `Broke Time + <hour_diff>h`. Compare the **re-entry time** against the `session_end` parameter:
 
 - If `re-entry_time > session_end` → **SKIP**. Report: `"ORB broke at {Broke Time} (re-entry at {re-entry_time}) — outside session ({session_end}), no trade."` Stop here.
 - Otherwise → proceed to Step 4.
@@ -85,7 +86,7 @@ Then based on `orb_type`, extract the SL and TP columns:
 |----------|-----------|-----------|
 | `Candle` | `Candle Cover` | `Candle TP` |
 | `FVG` | `FVG Cover` | `FVG TP` |
-| `Combined` | `FVG Ext` | `FVG EXT TP` |
+| `Combined` | `FVG Ext Cover` | `FVG EXT TP` |
 
 ### Step 5 — Validate SL and TP values
 
@@ -102,12 +103,12 @@ Two entry times are derived from `Broke Time`:
 
 | Time | Formula | Purpose |
 |------|---------|---------|
-| **Replay entry time** | Broke Time + 1h 1min | Bar replay positioning (where to place the chart) |
-| **Entry time** (for recording) | Broke Time + 1h | Logical entry time (what gets recorded in Notion) |
+| **Replay entry time** | Broke Time + <hour_diff>h 1min | Bar replay positioning (where to place the chart) |
+| **Entry time** (for recording) | Broke Time + <hour_diff>h | Logical entry time (what gets recorded in Notion) |
 
 Example:
-- Broke Time = `09:36` → replay entry time = `10:37`, entry time = `10:36`
-- Broke Time = `09:37` → replay entry time = `10:38`, entry time = `10:37`
+- Broke Time = `09:36`, `hour_diff = 1` → replay entry time = `10:37`, entry time = `10:36`
+- Broke Time = `09:37`, `hour_diff = 2` → replay entry time = `11:38`, entry time = `11:37`
 
 Move the chart to the replay entry time:
 
@@ -161,37 +162,78 @@ Invoke the `key-levels-in-range` skill with:
 | Parameter | Value |
 |-----------|-------|
 | `current_day_of_the_week` | The `day` parameter |
-| `entry_price` | `Candle Entry` |
+| `from_price` | `ORB High` if `ORB Operation = LONG`, `ORB Low` if `ORB Operation = SHORT` |
 | `take_profit_price` | `TP` from Step 4 (varies per `orb_type`) |
 
 Store the returned array as `liquidity_points`. Display the levels to the user. If the array is empty `[]`, use `"N/A"` as the value for `liquidity_points`.
 
-### Step 10 — Step forward until SL or TP is touched
+### Step 10 — Step forward until SL or TP is touched (via indicator hit tracking)
 
-Loop:
+The **ORB + FVG [NY]** indicator tracks first-touch times for all six levels (Candle Cover, Candle TP, FVG Cover, FVG TP, FVG Ext Cover, FVG EXT TP) in its status table — from the moment the ORB breaks. No entry-time filtering is applied; the AI handles that.
 
-1. Call `replay_step` to advance one bar.
-2. Call `data_get_ohlcv` with `count: 1` (or a small count) to get the current bar.
-3. Check if the bar's **high or low** touched the SL or TP:
+All hit times are displayed in **NY timezone** (same as Broke Time).
 
-**For LONG positions:**
-- Bar **low ≤ SL** → **SL HIT**. Capture the bar time as `result_time`. Stop.
-- Bar **high ≥ TP** → **TP HIT**. Capture the bar time as `result_time`. Stop.
+**Hit column mapping per `orb_type`:**
 
-**For SHORT positions:**
-- Bar **high ≥ SL** → **SL HIT**. Capture the bar time as `result_time`. Stop.
-- Bar **low ≤ TP** → **TP HIT**. Capture the bar time as `result_time`. Stop.
+| orb_type | SL Hit Row | TP Hit Row |
+|----------|-----------|------------|
+| `Candle` | `Candle Cover Hit` | `Candle TP Hit` |
+| `FVG` | `FVG Cover Hit` | `FVG TP Hit` |
+| `Combined` | `FVG Ext Cover Hit` | `FVG EXT TP Hit` |
 
-Repeat until one of these conditions is met (no time cutoff).
+**Time calculations for comparison:**
 
-### Step 11 — Calculate derived values for recording
+```
+entry_time   = Broke Time + <hour_diff>h   (HH:MM format)
+hit_time_adj = displayed_hit_time + <hour_diff>h   (same shift as entry_time)
+```
+
+Both times receive the same +<hour_diff>h adjustment, preserving their relative relationship while shifting the reference frame from NY (ET) to Argentina local time. All comparisons are string-based on `HH:MM` (lexicographic works for zero-padded 24h times).
+
+**Procedure:**
+
+1. Fetch the table immediately after re-entry:
+   ```
+   data_get_pine_tables(study_filter: "ORB + FVG [NY]")
+   ```
+
+2. Parse the table. Locate the SL Hit and TP Hit rows for your `orb_type`:
+   - If **SL Hit time ≠ `"-"`** → compute `hit_time_adj = SL Hit time + <hour_diff>h`. If **hit_time_adj ≥ `entry_time`** → **SL HIT (post-entry)**. Extract time as `result_time = hit_time_adj`. Stop.
+   - If **SL Hit time ≠ `"-"`** → compute `hit_time_adj = SL Hit time + <hour_diff>h`. If **hit_time_adj < `entry_time`** → Pre-entry hit. **Ignore** — keep stepping for a post-entry hit. (Note: the indicator only records the FIRST touch per level; if the first touch is pre-entry, no post-entry touch will be recorded. The trade is valid — you just keep stepping until TP or session end.)
+   - If **TP Hit time ≠ `"-"`** → compute `hit_time_adj = TP Hit time + <hour_diff>h`. If **hit_time_adj ≥ `entry_time`** → **TP HIT (post-entry)**. Extract time as `result_time = hit_time_adj`. Stop.
+   - If **TP Hit time ≠ `"-"`** → compute `hit_time_adj = TP Hit time + <hour_diff>h`. If **hit_time_adj < `entry_time`** → Pre-entry hit. **Ignore** — keep stepping.
+   - If **both are `"-"`** → no hit yet. Continue.
+
+3. **Batch-step 3–5 bars**:
+   ```
+   replay_step(steps: 5)
+   ```
+
+4. Fetch the table again. Repeat from step 2.
+
+5. **When a post-entry hit is found:**
+    - `result_time` = `hit_time_adj` (already computed in step 2 as `displayed_hit_time + <hour_diff>h`)
+   - `result` = `"Win"` (TP hit) or `"Loss"` (SL hit)
+   - Proceed to Step 11.
+
+### Step 11 — Remove the position drawing
+
+Clean up the chart by removing the position drawing before recording:
+
+```
+tradingview-mcp_draw_clear
+```
+
+This ensures the chart is clean for any subsequent strategy runs.
+
+### Step 12 — Calculate derived values for recording
 
 Compute all values needed by `orb-backtest-record`:
 
 | Value | Formula / Source |
 |-------|------------------|
 | `name` | `"ORB {orb_type} {date}"` |
-| `entry_time` | Broke Time + 1h (from Step 6) |
+| `entry_time` | Broke Time + <hour_diff>h (from Step 6) |
 | `orb_range_pts` | ORB High - ORB Low (direct price difference) |
 | `duration_min` | Minutes between `entry_time` and `result_time` |
 | `direction` | `"Long"` if ORB Operation = `LONG`, `"Short"` if `SHORT` |
@@ -199,9 +241,9 @@ Compute all values needed by `orb-backtest-record`:
 | `result` | `"Win"` if TP hit, `"Loss"` if SL hit |
 | `link` | The URL from `get_screenshot_link` (Step 8) |
 
-> **duration_min example:** entry_time = `10:36`, result_time = `10:45` → duration_min = `9`
+> **duration_min example:** entry_time = `10:36`, result_time = `11:45` → duration_min = `69`
 
-### Step 12 — Invoke orb-backtest-record
+### Step 13 — Invoke orb-backtest-record
 
 Invoke the `orb-backtest-record` skill with all collected and derived data:
 
@@ -224,7 +266,7 @@ orb-backtest-record(
 )
 ```
 
-### Step 13 — Report result
+### Step 14 — Report result
 
 State the outcome:
 
@@ -259,6 +301,7 @@ State the outcome:
 - `month` = `"May"`
 - `orb_type` = `"Candle"`
 - `session_end` = `"12:00"`
+- `hour_diff` = `1`
 
 **Step 1:** `replay_start({ date: "2026-05-19", time: "10:35" })`
 
@@ -276,11 +319,13 @@ State the outcome:
 
 **Step 8:** `get_screenshot_link()` → `"https://www.tradingview.com/x/abc123"`
 
-**Step 9:** `key-levels-in-range("Tuesday", 29047.75, 29170.25)` → `["LDH"]` → stored as `liquidity_points`
+**Step 9:** `key-levels-in-range("Tuesday", 29055.00, 29170.25)` → `["LDH"]` → stored as `liquidity_points`
 
-**Step 10:** Step. At 10:40 bar, low = `28980.50` ≤ SL `28986.50` → **SL HIT**. result_time = `10:40`.
+**Step 10:** Fetch table → `Candle Cover Hit` = `"-"`, `Candle TP Hit` = `"-"`. Step 5 bars. Fetch table → `Candle Cover Hit` = `"09:40"` → hit_time_adj = `"10:40"` ≥ entry_time `"10:36"` → **SL HIT**. result_time = `"10:40"`.
 
-**Step 11:**
+**Step 11:** `draw_clear()` to remove the position drawing from the chart.
+
+**Step 12:**
 - `name` = `"ORB Candle 19/05/2026"`
 - `entry_time` = `"10:36"`
 - `orb_range_pts` = `29055.00 - 29010.25 = 44.75`
@@ -290,9 +335,9 @@ State the outcome:
 - `result` = `"Loss"`
 - `link` = from `get_screenshot_link`
 
-**Step 12:** Invoke `orb-backtest-record` with all 14 parameters → row created in Candle datasource.
+**Step 13:** Invoke `orb-backtest-record` with all 14 parameters → row created in Candle datasource.
 
-**Step 13:**
+**Step 14:**
 
 ```
 ## ORB Strategy Result — 19/05/2026
@@ -343,10 +388,12 @@ State the outcome:
 - The chart must have the **"ORB + FVG [NY]"** indicator active. If the table returns no data, report the issue.
 - For `key-levels-in-range`, the chart must also have **ICT Killzones** and **Key Levels** indicators active.
 - Time comparisons in Step 3 are done as `HH:MM` string comparisons (lexicographic order works for zero-padded 24h times).
-- The replay entry time adds **+1h 1min** to Broke Time — this is for bar replay positioning only. The logical entry time (recorded) adds **+1h** only.
+- The replay entry time adds **+<hour_diff>h 1min** to Broke Time — this is for bar replay positioning only. The logical entry time (recorded) adds **+<hour_diff>h** only.
 - Entry is always `Candle Entry`, regardless of strategy type.
 - When SL and TP are both null/`"-"`, report both missing columns in the skip message.
 - All times are in the chart's configured timezone (interpreted by TradingView).
-- After `replay_start` to replay entry time, the ORB indicator resets and the table shows `OPEN`. Always use the trade parameters captured during Step 2–4 — never re-fetch the table at re-entry.
-- **Step 12** invokes `orb-backtest-record` to persist the trade to Notion. If the record skill is unavailable, display a warning but continue with the report.
+- After `replay_start` to replay entry time, the ORB indicator reprocesses all bars deterministically. Hit tracking variables rebuild from session start. The table may already show hits at the re-entry position — always check the table **before** stepping.
+- Step 10 uses **table-based hit tracking** from the Pine Script indicator, not OHLCV polling. Step in batches of 3–5 bars — the table stores exact first-touch times regardless of overshoot.
+- **All hit times receive +<hour_diff>h adjustment** before comparison with entry_time, just as entry_time itself gets +<hour_diff>h from Broke Time. This keeps the comparison within the same reference frame — hit_time_adj vs entry_time, both shifted by <hour_diff> hours (converting NY/ET to Argentina local time).
+- **Step 13** invokes `orb-backtest-record` to persist the trade to Notion. If the record skill is unavailable, display a warning but continue with the report.
 - `sl_distance_pts`, `orb_range_pts`, and `duration_min` are all positive numbers.
